@@ -28,6 +28,8 @@ st.markdown("""
     .pnl-table td { padding: 8px 12px; border-bottom: 1px solid #1E2330; text-align: right; color: #E0E0E0; }
     .pnl-table td:first-child { text-align: left; color: #8B949E; }
     .pnl-table tr:hover td { background-color: #1E2330; }
+    .pnl-table tr.transfer-row td { background-color: #0F1520; color: #8B949E; }
+    .pnl-table tr.transfer-row:hover td { background-color: #141a2a; }
     .pos { color: #00E676 !important; }
     .neg { color: #FF5370 !important; }
     .stat-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 12px 16px; }
@@ -185,7 +187,7 @@ if not df.empty:
 st.markdown("<br>", unsafe_allow_html=True)
 ct, cb = st.columns([3, 1])
 with ct:
-    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 Cumulative P&L</h4>", unsafe_allow_html=True)
 with cb:
     period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", key="range_radio")
 
@@ -268,13 +270,14 @@ if not df.empty:
     daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
     daily['일손익_OKX'] = daily['OKX통합'].diff().fillna(0)
 
+    # 입출금 반영 — 손익에서 제외
     if not transfer_df.empty:
         transfer_daily = transfer_df.copy()
         transfer_daily['조정금액'] = transfer_daily.apply(
             lambda r: r['금액'] if r['유형'] == '입금' else -r['금액'], axis=1
         )
-        transfer_daily = transfer_daily.groupby(pd.to_datetime(transfer_daily['날짜']).dt.normalize())['조정금액'].sum()
-        daily = daily.join(transfer_daily, how='left')
+        transfer_by_date = transfer_daily.groupby(pd.to_datetime(transfer_daily['날짜']).dt.normalize())['조정금액'].sum()
+        daily = daily.join(transfer_by_date, how='left')
         daily['조정금액'] = daily['조정금액'].fillna(0)
         daily['일손익_총'] = daily['일손익_총'] - daily['조정금액']
     else:
@@ -305,22 +308,48 @@ if not df.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # 날짜별 입출금 딕셔너리 (날짜 → 리스트)
+    transfer_rows = {}
+    if not transfer_df.empty:
+        for _, tr in transfer_df.iterrows():
+            d = pd.Timestamp(tr['날짜']).normalize()
+            if d not in transfer_rows:
+                transfer_rows[d] = []
+            transfer_rows[d].append(tr)
+
     rows_html = ""
     for date, row in daily.sort_index(ascending=False).iterrows():
         d_val = row[pnl_col]
         c_val = row[cum_col] - daily[cum_col].iloc[0]
-        transfer_val = row.get('조정금액', 0)
-
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
 
-        transfer_badge = ""
-        if transfer_val > 0:
-            transfer_badge = f"<span style='background:rgba(59,130,246,0.15);color:#3B82F6;font-size:11px;padding:1px 6px;border-radius:3px;margin-left:6px;'>입금 {fmt(transfer_val)}</span>"
-        elif transfer_val < 0:
-            transfer_badge = f"<span style='background:rgba(255,170,0,0.15);color:#FFAA00;font-size:11px;padding:1px 6px;border-radius:3px;margin-left:6px;'>출금 {fmt(abs(transfer_val))}</span>"
+        # 입출금 행을 날짜 위에 먼저 추가
+        if date in transfer_rows:
+            for tr in transfer_rows[date]:
+                is_deposit = tr['유형'] == '입금'
+                t_val = tr['금액'] if is_deposit else -tr['금액']
+                t_cls = "pos" if is_deposit else "neg"
+                badge_color = "#3B82F6" if is_deposit else "#FFAA00"
+                badge_bg = "rgba(59,130,246,0.15)" if is_deposit else "rgba(255,170,0,0.15)"
+                badge_text = f"입금 {fmt(tr['금액'])}" if is_deposit else f"출금 {fmt(tr['금액'])}"
+                rows_html += (
+                    f"<tr class='transfer-row'>"
+                    f"<td>{date.strftime('%Y-%m-%d')} "
+                    f"<span style='background:{badge_bg};color:{badge_color};font-size:11px;padding:1px 6px;border-radius:3px;'>{badge_text}</span></td>"
+                    f"<td class='{t_cls}'>{fmt_signed(t_val)}</td>"
+                    f"<td style='color:#2A2E39;'>—</td>"
+                    f"</tr>"
+                )
 
-        rows_html += f"<tr><td>{date.strftime('%Y-%m-%d')}{transfer_badge}</td><td class='{d_cls}'>{fmt_signed(d_val)}</td><td class='{c_cls}'>{fmt_signed(c_val)}</td></tr>"
+        # 트레이딩 손익 행
+        rows_html += (
+            f"<tr>"
+            f"<td>{date.strftime('%Y-%m-%d')}</td>"
+            f"<td class='{d_cls}'>{fmt_signed(d_val)}</td>"
+            f"<td class='{c_cls}'>{fmt_signed(c_val)}</td>"
+            f"</tr>"
+        )
 
     table_html = (
         "<div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;padding:0 4px;max-height:400px;overflow-y:auto;'>"
