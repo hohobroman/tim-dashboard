@@ -54,8 +54,8 @@ def load_data():
     try:
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    dict(st.secrets["gcp_service_account"]), scope
-)
+            dict(st.secrets["gcp_service_account"]), scope
+        )
         client = gspread.authorize(creds)
         db = client.open("TIM_Portfolio_DB")
 
@@ -129,15 +129,31 @@ def currency_btn(label):
         f"background:{bg};color:{color};border:1px solid {border};cursor:pointer;'>{label}</span></a>"
     )
 
+# ── LIVE / OFF 상태 판단 ──────────────────────────
+if not df.empty:
+    last_update = df.iloc[-1]['시간']
+    now_ts = pd.Timestamp.now()
+    elapsed = (now_ts - last_update).total_seconds()
+    if elapsed > 600:  # 10분 이상 업데이트 없으면 OFF
+        status_html = "🔴 OFF"
+        status_color = "#FF5370"
+    else:
+        status_html = "🟢 LIVE"
+        status_color = "#00E676"
+    l_time = last_update.strftime('%Y-%m-%d %H:%M:%S')
+else:
+    status_html = "🔴 OFF"
+    status_color = "#FF5370"
+    l_time = "..."
+
 # ── 헤더 ──────────────────────────────────────────
-l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 c1, c2 = st.columns([3, 1])
 with c1:
     st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🤖 T.I.M Live Dashboard</h3>", unsafe_allow_html=True)
 with c2:
     st.markdown(f"""
     <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding-top:8px;'>
-        <div style='color:#00E676; font-size:14px; font-weight:600;'>🟢 LIVE | {l_time}</div>
+        <div style='color:{status_color}; font-size:14px; font-weight:600;'>{status_html} | {l_time}</div>
         <div style='display:flex; gap:6px;'>
             {currency_btn('KRW')}
             {currency_btn('USD')}
@@ -197,36 +213,18 @@ if not df.empty:
     if period == "4H":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
         pdf = pdf.resample('4h').last().dropna()
-        xaxis_cfg = dict(
-            tickformat="%m-%d %H:%M",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), pdf.index.max()],
-            dtick=4 * 60 * 60 * 1000,
-            tickangle=0,
-        )
+        xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()], dtick=4*60*60*1000, tickangle=0)
     elif period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
-        xaxis_cfg = dict(
-            tickformat="%m-%d",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), pdf.index.max()],
-        )
+        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()])
     elif period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
         pdf = pdf.resample('W-MON').last().dropna()
-        xaxis_cfg = dict(
-            tickformat="%m-%d",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), pdf.index.max()],
-        )
+        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()])
     else:
         pdf = pdf.resample('ME').last().dropna()
-        xaxis_cfg = dict(
-            tickformat="%Y-%m",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), pdf.index.max()],
-        )
+        xaxis_cfg = dict(tickformat="%Y-%m", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()])
 
     if is_usd:
         pdf[['총자산', '김프차익', 'OKX통합']] /= usdt_rate
