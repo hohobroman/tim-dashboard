@@ -129,32 +129,17 @@ def currency_btn(label):
         f"background:{bg};color:{color};border:1px solid {border};cursor:pointer;'>{label}</span></a>"
     )
 
-# ── LIVE / OFF 상태 판단 ──────────────────────────
-if not df.empty:
-    last_update = df.iloc[-1]['시간']
-    now_ts = pd.Timestamp.now()
-    elapsed = (now_ts - last_update).total_seconds()
-    if elapsed > 600:  # 10분 이상 업데이트 없으면 OFF
-        status_html = "🔴 OFF"
-        status_color = "#FF5370"
-    else:
-        status_html = "🟢 LIVE"
-        status_color = "#00E676"
-    l_time = last_update.strftime('%Y-%m-%d %H:%M:%S')
-else:
-    status_html = "🔴 OFF"
-    status_color = "#FF5370"
-    l_time = "..."
-
 # ── 헤더 ──────────────────────────────────────────
+l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 c1, c2 = st.columns([3, 1])
 with c1:
     st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🤖 T.I.M Live Dashboard</h3>", unsafe_allow_html=True)
 with c2:
     st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding-top:8px;'>
-        <div style='color:{status_color}; font-size:14px; font-weight:600;'>{status_html} | {l_time}</div>
-        <div style='display:flex; gap:6px;'>
+    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding-top:8px;'>
+        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
+        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+        <div style='display:flex; gap:6px; margin-top:2px;'>
             {currency_btn('KRW')}
             {currency_btn('USD')}
         </div>
