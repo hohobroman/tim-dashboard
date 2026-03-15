@@ -53,7 +53,9 @@ def get_exchange_rate():
 def load_data():
     try:
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name('google_key.json', scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    dict(st.secrets["gcp_service_account"]), scope
+)
         client = gspread.authorize(creds)
         db = client.open("TIM_Portfolio_DB")
 
