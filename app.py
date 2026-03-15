@@ -185,7 +185,7 @@ if not df.empty:
 st.markdown("<br>", unsafe_allow_html=True)
 ct, cb = st.columns([3, 1])
 with ct:
-    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 Cumulative P&L</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
 with cb:
     period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", key="range_radio")
 
