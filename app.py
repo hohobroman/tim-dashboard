@@ -196,22 +196,47 @@ chart_filter = st.radio("Chart Filter", ["All", "KIMP", "OKX"], horizontal=True,
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
+    today = pd.Timestamp.now()
 
     if period == "4H":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
         pdf = pdf.resample('4h').last().dropna()
-        xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()], dtick=4*60*60*1000, tickangle=0)
+        xaxis_cfg = dict(
+            tickformat="%m-%d %H:%M",
+            gridcolor='#2A2E39',
+            range=[pdf.index.min(), pdf.index.max()],
+            dtick=4*60*60*1000,
+            tickangle=0,
+        )
     elif period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
-        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()])
+        x_end = today + pd.Timedelta(days=14)
+        xaxis_cfg = dict(
+            tickformat="%m-%d",
+            gridcolor='#2A2E39',
+            range=[pdf.index.min(), x_end],
+            dtick=86400000,
+        )
     elif period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
         pdf = pdf.resample('W-MON').last().dropna()
-        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()])
-    else:
+        x_end = today + pd.Timedelta(weeks=4)
+        xaxis_cfg = dict(
+            tickformat="%m-%d",
+            gridcolor='#2A2E39',
+            range=[pdf.index.min(), x_end],
+            dtick=7*86400000,
+        )
+    else:  # M
         pdf = pdf.resample('ME').last().dropna()
-        xaxis_cfg = dict(tickformat="%Y-%m", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()])
+        x_end = today + pd.DateOffset(months=3)
+        xaxis_cfg = dict(
+            tickformat="%Y-%m",
+            gridcolor='#2A2E39',
+            range=[pdf.index.min(), x_end],
+            dtick='M1',
+        )
 
     if is_usd:
         pdf[['총자산', '김프차익', 'OKX통합']] /= usdt_rate
@@ -270,7 +295,6 @@ if not df.empty:
     daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
     daily['일손익_OKX'] = daily['OKX통합'].diff().fillna(0)
 
-    # 입출금 반영 — 손익에서 제외
     if not transfer_df.empty:
         transfer_daily = transfer_df.copy()
         transfer_daily['조정금액'] = transfer_daily.apply(
@@ -308,7 +332,6 @@ if not df.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 날짜별 입출금 딕셔너리 (날짜 → 리스트)
     transfer_rows = {}
     if not transfer_df.empty:
         for _, tr in transfer_df.iterrows():
@@ -324,7 +347,6 @@ if not df.empty:
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
 
-        # 입출금 행을 날짜 위에 먼저 추가
         if date in transfer_rows:
             for tr in transfer_rows[date]:
                 is_deposit = tr['유형'] == '입금'
@@ -342,7 +364,6 @@ if not df.empty:
                     f"</tr>"
                 )
 
-        # 트레이딩 손익 행
         rows_html += (
             f"<tr>"
             f"<td>{date.strftime('%Y-%m-%d')}</td>"
