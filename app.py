@@ -85,7 +85,6 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-# ── session state 초기화 ───────────────────────────
 if 'currency' not in st.session_state:
     st.session_state.currency = 'KRW'
 if 'range_radio' not in st.session_state:
@@ -220,7 +219,7 @@ if not df.empty:
         )
     elif period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
-        pdf = pdf.resample('W-MON').last().dropna()
+        pdf = pdf.resample('W-SUN').last().dropna()
         x_end = today + pd.Timedelta(weeks=4)
         xaxis_cfg = dict(
             tickformat="%m-%d",
