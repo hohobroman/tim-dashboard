@@ -290,21 +290,10 @@ if not df.empty:
     daily = daily.groupby(daily.index.date).last()
     daily.index = pd.to_datetime(daily.index)
 
+    # ✅ 입출금 조정 없이 순수 자산 변동만으로 손익 계산
     daily['일손익_총']  = daily['총자산'].diff().fillna(0)
     daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
     daily['일손익_OKX'] = daily['OKX통합'].diff().fillna(0)
-
-    if not transfer_df.empty:
-        transfer_daily = transfer_df.copy()
-        transfer_daily['조정금액'] = transfer_daily.apply(
-            lambda r: r['금액'] if r['유형'] == '입금' else -r['금액'], axis=1
-        )
-        transfer_by_date = transfer_daily.groupby(pd.to_datetime(transfer_daily['날짜']).dt.normalize())['조정금액'].sum()
-        daily = daily.join(transfer_by_date, how='left')
-        daily['조정금액'] = daily['조정금액'].fillna(0)
-        daily['일손익_총'] = daily['일손익_총'] - daily['조정금액']
-    else:
-        daily['조정금액'] = 0
 
     pnl_filter = st.radio("PnL Filter", ["전체", "KIMP", "OKX"], horizontal=True, label_visibility="collapsed", key="pnl_filter")
 
@@ -331,6 +320,7 @@ if not df.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # 날짜별 입출금 딕셔너리
     transfer_rows = {}
     if not transfer_df.empty:
         for _, tr in transfer_df.iterrows():
@@ -346,23 +336,26 @@ if not df.empty:
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
 
+        # ✅ 입출금 행 — 표시만, 손익 계산 완전 제외
         if date in transfer_rows:
             for tr in transfer_rows[date]:
                 is_deposit = tr['유형'] == '입금'
-                t_val = tr['금액'] if is_deposit else -tr['금액']
-                t_cls = "pos" if is_deposit else "neg"
                 badge_color = "#3B82F6" if is_deposit else "#FFAA00"
-                badge_bg = "rgba(59,130,246,0.15)" if is_deposit else "rgba(255,170,0,0.15)"
-                badge_text = f"입금 {fmt(tr['금액'])}" if is_deposit else f"출금 {fmt(tr['금액'])}"
+                badge_bg    = "rgba(59,130,246,0.15)" if is_deposit else "rgba(255,170,0,0.15)"
+                badge_text  = f"입금 {fmt(tr['금액'])}" if is_deposit else f"출금 {fmt(tr['금액'])}"
+                memo = tr.get('메모', '')
+                memo_badge  = f"<span style='color:#8B949E;font-size:11px;margin-left:4px;'>{memo}</span>" if memo else ""
                 rows_html += (
                     f"<tr class='transfer-row'>"
                     f"<td>{date.strftime('%Y-%m-%d')} "
-                    f"<span style='background:{badge_bg};color:{badge_color};font-size:11px;padding:1px 6px;border-radius:3px;'>{badge_text}</span></td>"
-                    f"<td class='{t_cls}'>{fmt_signed(t_val)}</td>"
+                    f"<span style='background:{badge_bg};color:{badge_color};font-size:11px;padding:1px 6px;border-radius:3px;'>{badge_text}</span>"
+                    f"{memo_badge}</td>"
+                    f"<td style='color:#2A2E39;'>—</td>"
                     f"<td style='color:#2A2E39;'>—</td>"
                     f"</tr>"
                 )
 
+        # 트레이딩 손익 행
         rows_html += (
             f"<tr>"
             f"<td>{date.strftime('%Y-%m-%d')}</td>"
