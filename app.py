@@ -162,7 +162,7 @@ if not df.empty:
 st.markdown("<br>", unsafe_allow_html=True)
 ct, cb = st.columns([3, 1])
 with ct:
-    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 Cumulative P&L</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
 with cb:
     period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="range_radio")
 
@@ -225,8 +225,12 @@ if not df.empty:
 # ── 포지션 현황 ───────────────────────────────────
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    kimp_only = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit'])]
+    kimp_only = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit'])].copy()
     if not kimp_only.empty:
+        if '방향' in kimp_only.columns:
+            kimp_only['방향'] = kimp_only['방향'].replace({'SPOT': 'LONG'})
+        if '종목' in kimp_only.columns:
+            kimp_only['종목'] = kimp_only['종목'].str.replace(':USDT', ' PERP', regex=False)
         st.dataframe(kimp_only, use_container_width=True, hide_index=True)
     else:
         st.info("현재 포지션이 없습니다.")
