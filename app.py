@@ -85,17 +85,21 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-if 'currency' not in st.session_state:
-    st.session_state.currency = 'KRW'
-if 'range_radio' not in st.session_state:
-    st.session_state.range_radio = 'D'
+# ── 헤더 ──────────────────────────────────────────
+l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
+c1, c2 = st.columns([3, 1])
+with c1:
+    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🤖 T.I.M Live Dashboard</h3>", unsafe_allow_html=True)
+with c2:
+    st.markdown(f"""
+    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding-top:8px;'>
+        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
+        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    currency = st.radio("Currency", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="curr_radio")
 
-params = st.query_params
-if 'currency' in params:
-    st.session_state.currency = params['currency']
-    st.query_params.clear()
-
-is_usd = (st.session_state.currency == "USD")
+is_usd = (currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
 
@@ -118,34 +122,6 @@ def metric_card(label, value, diff, pct):
         {pct_html(pct)}
         {delta_html(diff)}
     </div>"""
-
-def currency_btn(label):
-    active = st.session_state.currency == label
-    bg     = "#00E676" if active else "transparent"
-    color  = "#000"    if active else "#8B949E"
-    border = "#00E676" if active else "#2A2E39"
-    return (
-        f"<a href='?currency={label}' style='text-decoration:none;'>"
-        f"<span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;"
-        f"background:{bg};color:{color};border:1px solid {border};cursor:pointer;'>{label}</span></a>"
-    )
-
-# ── 헤더 ──────────────────────────────────────────
-l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
-c1, c2 = st.columns([3, 1])
-with c1:
-    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🤖 T.I.M Live Dashboard</h3>", unsafe_allow_html=True)
-with c2:
-    st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding-top:8px;'>
-        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
-        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
-        <div style='display:flex; gap:6px; margin-top:2px;'>
-            {currency_btn('KRW')}
-            {currency_btn('USD')}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
 # ── 요약 카드 + Allocation ─────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
@@ -188,7 +164,7 @@ ct, cb = st.columns([3, 1])
 with ct:
     st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 Cumulative P&L</h4>", unsafe_allow_html=True)
 with cb:
-    period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", key="range_radio")
+    period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="range_radio")
 
 chart_filter = st.radio("Chart Filter", ["All", "KIMP", "OKX"], horizontal=True, label_visibility="collapsed", key="chart_filter")
 
@@ -200,42 +176,18 @@ if not df.empty:
     if period == "4H":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
         pdf = pdf.resample('4h').last().dropna()
-        xaxis_cfg = dict(
-            tickformat="%m-%d %H:%M",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), pdf.index.max()],
-            dtick=4*60*60*1000,
-            tickangle=0,
-        )
+        xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()], dtick=4*60*60*1000, tickangle=0)
     elif period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
-        x_end = today + pd.Timedelta(days=14)
-        xaxis_cfg = dict(
-            tickformat="%m-%d",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), x_end],
-            dtick=86400000,
-        )
+        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(days=14)], dtick=86400000)
     elif period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
         pdf = pdf.resample('W-SUN').last().dropna()
-        x_end = today + pd.Timedelta(weeks=4)
-        xaxis_cfg = dict(
-            tickformat="%m-%d",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), x_end],
-            dtick=7*86400000,
-        )
-    else:  # M
+        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(weeks=4)], dtick=7*86400000)
+    else:
         pdf = pdf.resample('ME').last().dropna()
-        x_end = today + pd.DateOffset(months=3)
-        xaxis_cfg = dict(
-            tickformat="%Y-%m",
-            gridcolor='#2A2E39',
-            range=[pdf.index.min(), x_end],
-            dtick='M1',
-        )
+        xaxis_cfg = dict(tickformat="%Y-%m", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.DateOffset(months=3)], dtick='M1')
 
     if is_usd:
         pdf[['총자산', '김프차익', 'OKX통합']] /= usdt_rate
@@ -290,7 +242,6 @@ if not df.empty:
     daily = daily.groupby(daily.index.date).last()
     daily.index = pd.to_datetime(daily.index)
 
-    # ✅ 입출금 조정 없이 순수 자산 변동만으로 손익 계산
     daily['일손익_총']  = daily['총자산'].diff().fillna(0)
     daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
     daily['일손익_OKX'] = daily['OKX통합'].diff().fillna(0)
@@ -320,7 +271,6 @@ if not df.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 날짜별 입출금 딕셔너리
     transfer_rows = {}
     if not transfer_df.empty:
         for _, tr in transfer_df.iterrows():
@@ -336,14 +286,13 @@ if not df.empty:
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
 
-        # ✅ 입출금 행 — 표시만, 손익 계산 완전 제외
         if date in transfer_rows:
             for tr in transfer_rows[date]:
-                is_deposit = tr['유형'] == '입금'
+                is_deposit  = tr['유형'] == '입금'
                 badge_color = "#3B82F6" if is_deposit else "#FFAA00"
                 badge_bg    = "rgba(59,130,246,0.15)" if is_deposit else "rgba(255,170,0,0.15)"
                 badge_text  = f"입금 {fmt(tr['금액'])}" if is_deposit else f"출금 {fmt(tr['금액'])}"
-                memo = tr.get('메모', '')
+                memo        = tr.get('메모', '')
                 memo_badge  = f"<span style='color:#8B949E;font-size:11px;margin-left:4px;'>{memo}</span>" if memo else ""
                 rows_html += (
                     f"<tr class='transfer-row'>"
@@ -355,7 +304,6 @@ if not df.empty:
                     f"</tr>"
                 )
 
-        # 트레이딩 손익 행
         rows_html += (
             f"<tr>"
             f"<td>{date.strftime('%Y-%m-%d')}</td>"
