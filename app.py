@@ -33,7 +33,7 @@ st.markdown("""
     .stat-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 12px 16px; }
     .stat-label { font-size: 12px; color: #8B949E; margin-bottom: 4px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #FFFFFF; }
-    .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 18px; height: 100%; min-height: 130px; display: flex; flex-direction: column; justify-content: center; }
+    .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 18px; height: 100%; min-height: 160px; display: flex; flex-direction: column; justify-content: center; }
     .alloc-label { font-size: 13px; color: #8B949E; margin-bottom: 10px; font-weight: 500; }
     .alloc-row { display: flex; align-items: center; margin-bottom: 8px; gap: 10px; }
     .alloc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -119,12 +119,12 @@ def currency_btn(label):
     style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
     return f"<a href='?currency={label}' style='text-decoration:none;'><span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
 
-# ── 헤더 (순수 HTML flexbox) ───────────────────────
+# ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 st.markdown(f"""
-<div style='display:flex; justify-content:space-between; align-items:flex-start; padding-top:10px; padding-bottom:8px;'>
+<div style='position:relative; padding-top:10px; padding-bottom:8px; min-height:90px;'>
     <h3 style='margin:0; color:#fff; font-weight:700;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px;'>
+    <div style='position:absolute; top:10px; right:0; display:flex; flex-direction:column; align-items:flex-end; gap:8px;'>
         <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
         <div style='display:flex; gap:6px;'>
