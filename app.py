@@ -119,22 +119,21 @@ def currency_btn(label):
     style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
     return f"<a href='?currency={label}' style='text-decoration:none;'><span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
 
-# ── 헤더 ──────────────────────────────────────────
+# ── 헤더 (순수 HTML flexbox) ───────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
-c1, c2 = st.columns([4, 1])
-with c1:
-    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
-with c2:
-    st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; justify-content:flex-end; gap:8px; padding-top:8px; width:100%;'>
-        <div style='color:#8B949E; font-size:12px; text-align:right;'>마지막 업데이트</div>
-        <div style='color:#E0E0E0; font-size:14px; font-weight:600; text-align:right;'>{l_time}</div>
-        <div style='display:flex; gap:6px; justify-content:flex-end;'>
+st.markdown(f"""
+<div style='display:flex; justify-content:space-between; align-items:flex-start; padding-top:10px; padding-bottom:8px;'>
+    <h3 style='margin:0; color:#fff; font-weight:700;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>
+    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px;'>
+        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
+        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+        <div style='display:flex; gap:6px;'>
             {currency_btn('KRW')}
             {currency_btn('USD')}
         </div>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 # ── 요약 카드 + Allocation ─────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
