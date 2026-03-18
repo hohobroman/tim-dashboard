@@ -13,7 +13,7 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 0 10px 0; text-align: center; width: 100%; }
+    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 0 10px 0; text-align: center; }
     .metric-label { font-size: 13px; color: #8B949E; margin-bottom: 4px; }
     .metric-value { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
     .metric-pct-pos { font-size: 14px; font-weight: 600; color: #00E676; margin-bottom: 5px; }
@@ -33,7 +33,7 @@ st.markdown("""
     .stat-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 12px 16px; }
     .stat-label { font-size: 12px; color: #8B949E; margin-bottom: 4px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #FFFFFF; }
-    .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 18px; height: 100%; min-height: 160px; display: flex; flex-direction: column; justify-content: center; }
+    .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; justify-content: center; }
     .alloc-label { font-size: 13px; color: #8B949E; margin-bottom: 10px; font-weight: 500; }
     .alloc-row { display: flex; align-items: center; margin-bottom: 8px; gap: 10px; }
     .alloc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -106,13 +106,6 @@ def pct_html(pct):
     sign = "+" if pct >= 0 else ""
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
-def metric_card(label, value, diff, pct):
-    return f"""<div class="metric-card">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value">{fmt(value)}</div>
-        {pct_html(pct)}
-        {delta_html(diff)}
-    </div>"""
 
 def currency_btn(label):
     active = st.session_state.currency == label
@@ -135,8 +128,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── 요약 카드 + Allocation ─────────────────────────
-st.markdown("<br>", unsafe_allow_html=True)
+# ── 요약 카드 4개 (순수 HTML flex) ────────────────
 if not df.empty:
     curr  = df.iloc[-1]
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
@@ -149,12 +141,27 @@ if not df.empty:
     kimp_ratio = curr['김프차익'] / total_val * 100
     okx_ratio  = curr['OKX통합']  / total_val * 100
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: st.markdown(metric_card("TOTAL (총 자산)",          curr['총자산'],   curr['총자산']  -prev['총자산'],   pct_change('총자산')),   unsafe_allow_html=True)
-    with col2: st.markdown(metric_card("김프차익 (업비트&바이비트)", curr['김프차익'], curr['김프차익']-prev['김프차익'], pct_change('김프차익')), unsafe_allow_html=True)
-    with col3: st.markdown(metric_card("OKX (시그널봇&현물)",       curr['OKX통합'],  curr['OKX통합'] -prev['OKX통합'],  pct_change('OKX통합')),  unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"""<div class="alloc-card">
+    st.markdown(f"""
+    <div style='display:flex; gap:12px; margin-bottom:16px;'>
+        <div class="metric-card" style='flex:1;'>
+            <div class="metric-label">TOTAL (총 자산)</div>
+            <div class="metric-value">{fmt(curr['총자산'])}</div>
+            {pct_html(pct_change('총자산'))}
+            {delta_html(curr['총자산']-prev['총자산'])}
+        </div>
+        <div class="metric-card" style='flex:1;'>
+            <div class="metric-label">김프차익 (업비트&바이비트)</div>
+            <div class="metric-value">{fmt(curr['김프차익'])}</div>
+            {pct_html(pct_change('김프차익'))}
+            {delta_html(curr['김프차익']-prev['김프차익'])}
+        </div>
+        <div class="metric-card" style='flex:1;'>
+            <div class="metric-label">OKX (시그널봇&현물)</div>
+            <div class="metric-value">{fmt(curr['OKX통합'])}</div>
+            {pct_html(pct_change('OKX통합'))}
+            {delta_html(curr['OKX통합']-prev['OKX통합'])}
+        </div>
+        <div class="alloc-card" style='flex:1;'>
             <div class="alloc-label">자산 비중</div>
             <div class="alloc-row">
                 <div class="alloc-dot" style="background:#00E676;"></div>
@@ -168,7 +175,9 @@ if not df.empty:
                 <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:{okx_ratio:.1f}%;background:#3B82F6;"></div></div>
                 <div class="alloc-pct">{okx_ratio:.1f}%</div>
             </div>
-        </div>""", unsafe_allow_html=True)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ── 차트 ─────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
