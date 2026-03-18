@@ -89,7 +89,7 @@ df, pos_df, transfer_df = load_data()
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 c1, c2 = st.columns([3, 1])
 with c1:
-    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px; font-size:1.2em;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
 with c2:
     st.markdown(f"""
     <div style='display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding-top:8px;'>
