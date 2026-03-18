@@ -15,6 +15,8 @@ st.markdown("""
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
     [data-testid="stRadio"] { display: flex !important; justify-content: flex-end !important; width: 100% !important; }
     [role="radiogroup"] { justify-content: flex-end !important; gap: 15px !important; margin-left: auto !important; }
+    div[data-testid="stRadio"] > div { justify-content: flex-end !important; }
+    div[data-testid="stRadio"] > div > div { margin-left: auto !important; }
     .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 0 10px 0; text-align: center; width: 100%; }
     .metric-label { font-size: 13px; color: #8B949E; margin-bottom: 4px; }
     .metric-value { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
@@ -143,7 +145,7 @@ if not df.empty:
     with col3: st.markdown(metric_card("OKX (시그널봇&현물)",       curr['OKX통합'],  curr['OKX통합'] -prev['OKX통합'],  pct_change('OKX통합')),  unsafe_allow_html=True)
     with col4:
         st.markdown(f"""<div class="alloc-card">
-            <div class="alloc-label">ALLOCATION</div>
+            <div class="alloc-label">자산 비중</div>
             <div class="alloc-row">
                 <div class="alloc-dot" style="background:#00E676;"></div>
                 <div class="alloc-name">KIMP</div>
