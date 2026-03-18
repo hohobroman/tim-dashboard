@@ -114,7 +114,7 @@ def currency_btn(label):
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 st.markdown(f"""
-<div style='position:relative; padding-top:10px; padding-bottom:8px; min-height:90px;'>
+<div style='position:relative; padding-top:10px; padding-bottom:20px; min-height:110px;'>
     <h3 style='margin:0; color:#fff; font-weight:700;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>
     <div style='position:absolute; top:10px; right:0; display:flex; flex-direction:column; align-items:flex-end; gap:8px;'>
         <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
@@ -141,7 +141,7 @@ if not df.empty:
     okx_ratio  = curr['OKX통합']  / total_val * 100
 
     st.markdown(f"""
-    <div style='display:flex; gap:12px; margin-bottom:16px;'>
+    <div style='display:flex; gap:12px; margin-top:16px; margin-bottom:16px;'>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">TOTAL (총 자산)</div>
             <div class="metric-value">{fmt(curr['총자산'])}</div>
