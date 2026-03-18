@@ -33,7 +33,7 @@ st.markdown("""
     .stat-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 12px 16px; }
     .stat-label { font-size: 12px; color: #8B949E; margin-bottom: 4px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #FFFFFF; }
-    .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 18px; height: 100%; }
+    .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 18px; height: 100%; min-height: 130px; display: flex; flex-direction: column; justify-content: center; }
     .alloc-label { font-size: 13px; color: #8B949E; margin-bottom: 10px; font-weight: 500; }
     .alloc-row { display: flex; align-items: center; margin-bottom: 8px; gap: 10px; }
     .alloc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
