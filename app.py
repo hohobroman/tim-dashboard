@@ -13,13 +13,18 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 16px 0 4px 0; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+    .cards-container { display: flex; gap: 12px; margin-top: 16px; margin-bottom: 16px; }
+    @media (max-width: 768px) {
+        .cards-container { flex-wrap: wrap !important; }
+        .cards-container > div { flex: 0 0 calc(50% - 6px) !important; min-width: calc(50% - 6px) !important; }
+    }
+    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 16px 0 8px 0; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     .metric-label { font-size: 13px; color: #8B949E; margin-bottom: 4px; }
     .metric-value { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
-    .metric-pct-pos { font-size: 14px; font-weight: 600; color: #00E676; margin-bottom: 2px; }
-    .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 2px; }
-    .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 0px 8px; border-radius: 4px; margin-bottom: 8px; }
-    .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 0px 8px; border-radius: 4px; margin-bottom: 8px; }
+    .metric-pct-pos { font-size: 14px; font-weight: 600; color: #00E676; margin-bottom: 4px; }
+    .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 4px; }
+    .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 2px 10px; border-radius: 4px; }
+    .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 2px 10px; border-radius: 4px; }
     .pnl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .pnl-table th { color: #8B949E; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #2A2E39; text-align: right; }
     .pnl-table th:first-child { text-align: left; }
@@ -100,7 +105,7 @@ def fmt_signed(val):
 def delta_html(val):
     sym = "▲" if val >= 0 else "▼"
     css = "metric-delta-pos" if val >= 0 else "metric-delta-neg"
-    return f'<span class="{css}">{sym} {fmt(abs(val))}</span>'
+    return f'<div style="padding-bottom:8px;"><span class="{css}">{sym} {fmt(abs(val))}</span></div>'
 def pct_html(pct):
     sign = "+" if pct >= 0 else ""
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
@@ -141,7 +146,7 @@ if not df.empty:
     okx_ratio  = curr['OKX통합']  / total_val * 100
 
     st.markdown(f"""
-    <div style='display:flex; gap:12px; margin-top:16px; margin-bottom:16px;'>
+    <div class='cards-container'>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">TOTAL (총 자산)</div>
             <div class="metric-value">{fmt(curr['총자산'])}</div>
