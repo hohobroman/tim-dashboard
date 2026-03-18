@@ -13,13 +13,13 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 16px 0 10px 0; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 16px 0 4px 0; text-align: center; display: flex; flex-direction: column; justify-content: center; }
     .metric-label { font-size: 13px; color: #8B949E; margin-bottom: 4px; }
     .metric-value { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
-    .metric-pct-pos { font-size: 14px; font-weight: 600; color: #00E676; margin-bottom: 5px; }
-    .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 5px; }
-    .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 0px 8px; border-radius: 4px; }
-    .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 0px 8px; border-radius: 4px; }
+    .metric-pct-pos { font-size: 14px; font-weight: 600; color: #00E676; margin-bottom: 2px; }
+    .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 2px; }
+    .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 0px 8px; border-radius: 4px; margin-bottom: 8px; }
+    .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 0px 8px; border-radius: 4px; margin-bottom: 8px; }
     .pnl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .pnl-table th { color: #8B949E; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #2A2E39; text-align: right; }
     .pnl-table th:first-child { text-align: left; }
@@ -162,7 +162,7 @@ if not df.empty:
         </div>
         <div class="alloc-card" style='flex:1;'>
             <div class="alloc-label">자산 비중</div>
-            <div style='height:30px;'></div>
+            <div style='height:20px;'></div>
             <div class="alloc-row">
                 <div class="alloc-dot" style="background:#00E676;"></div>
                 <div class="alloc-name">KIMP</div>
@@ -175,7 +175,7 @@ if not df.empty:
                 <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:{okx_ratio:.1f}%;background:#3B82F6;"></div></div>
                 <div class="alloc-pct">{okx_ratio:.1f}%</div>
             </div>
-            <div style='height:30px;'></div>
+            <div style='height:20px;'></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
