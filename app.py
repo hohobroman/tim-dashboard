@@ -13,10 +13,6 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    [data-testid="stRadio"] { display: flex !important; justify-content: flex-end !important; width: 100% !important; }
-    [role="radiogroup"] { justify-content: flex-end !important; gap: 15px !important; margin-left: auto !important; }
-    div[data-testid="stRadio"] > div { justify-content: flex-end !important; }
-    div[data-testid="stRadio"] > div > div { margin-left: auto !important; }
     .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 0 10px 0; text-align: center; width: 100%; }
     .metric-label { font-size: 13px; color: #8B949E; margin-bottom: 4px; }
     .metric-value { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
@@ -87,21 +83,14 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-# ── 헤더 ──────────────────────────────────────────
-l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
-c1, c2 = st.columns([3, 1])
-with c1:
-    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
-with c2:
-    st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding-top:8px;'>
-        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
-        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
-    </div>
-    """, unsafe_allow_html=True)
-    currency = st.radio("Currency", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="curr_radio")
+# ── currency session state ─────────────────────────
+if 'currency' not in st.session_state:
+    st.session_state.currency = 'KRW'
+if st.query_params.get('currency'):
+    st.session_state.currency = st.query_params['currency']
+    st.query_params.clear()
 
-is_usd = (currency == "USD")
+is_usd = (st.session_state.currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
 
@@ -124,6 +113,28 @@ def metric_card(label, value, diff, pct):
         {pct_html(pct)}
         {delta_html(diff)}
     </div>"""
+
+def currency_btn(label):
+    active = st.session_state.currency == label
+    style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
+    return f"<a href='?currency={label}' style='text-decoration:none;'><span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
+
+# ── 헤더 ──────────────────────────────────────────
+l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
+c1, c2 = st.columns([3, 1])
+with c1:
+    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
+with c2:
+    st.markdown(f"""
+    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding-top:8px;'>
+        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
+        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+        <div style='display:flex; gap:6px;'>
+            {currency_btn('KRW')}
+            {currency_btn('USD')}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ── 요약 카드 + Allocation ─────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
