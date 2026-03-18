@@ -13,7 +13,7 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 0 10px 0; text-align: center; }
+    .metric-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 14px 0 10px 0; text-align: center; display: flex; flex-direction: column; justify-content: center; }
     .metric-label { font-size: 13px; color: #8B949E; margin-bottom: 4px; }
     .metric-value { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
     .metric-pct-pos { font-size: 14px; font-weight: 600; color: #00E676; margin-bottom: 5px; }
@@ -141,7 +141,7 @@ if not df.empty:
     okx_ratio  = curr['OKX통합']  / total_val * 100
 
     st.markdown(f"""
-    <div style='display:flex; gap:12px; margin-bottom:16px;'>
+    <div style='display:flex; gap:12px; margin-bottom:16px; align-items:stretch;'>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">TOTAL (총 자산)</div>
             <div class="metric-value">{fmt(curr['총자산'])}</div>
