@@ -83,7 +83,6 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-# ── currency session state ─────────────────────────
 if 'currency' not in st.session_state:
     st.session_state.currency = 'KRW'
 if st.query_params.get('currency'):
