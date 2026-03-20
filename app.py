@@ -147,7 +147,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── 요약 카드 (전체) ──────────────────────────────
+# ── 요약 카드 ─────────────────────────────────────
 if not df.empty:
     curr  = df.iloc[-1]
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
@@ -156,10 +156,10 @@ if not df.empty:
     def pct_change(col):
         return 0.0 if first[col] == 0 else (curr[col] - first[col]) / first[col] * 100
 
-    total_val   = curr['총자산'] if curr['총자산'] != 0 else 1
-    kimp_ratio  = curr['김프차익'] / total_val * 100
-    okx_ratio   = curr['OKX통합']  / total_val * 100
-    bg_ratio    = curr['비트겟 현물DCA'] / total_val * 100
+    total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
+    kimp_ratio = curr['김프차익'] / total_val * 100
+    okx_ratio  = curr['OKX통합']  / total_val * 100
+    bg_ratio   = curr['비트겟 현물DCA'] / total_val * 100
 
     st.markdown(f"""
     <div class='cards-container'>
@@ -222,21 +222,23 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── 탭별 col 설정 ──────────────────────────────────
+# ── 탭별 설정 ──────────────────────────────────────
 tab_col_map = {
-    'KIMP':   ('김프차익',      '김프차익 (업비트&바이비트)', '#00E676'),
-    'OKX':    ('OKX통합',       'OKX (시그널봇&현물)',        '#3B82F6'),
-    'BITGET': ('비트겟 현물DCA', '비트겟 현물 DCA',            '#F59E0B'),
+    'KIMP':   ('김프차익',       '#00E676'),
+    'OKX':    ('OKX통합',        '#3B82F6'),
+    'BITGET': ('비트겟 현물DCA',  '#F59E0B'),
 }
-col_key, col_label, col_color = tab_col_map[active_tab]
+col_key, col_color = tab_col_map[active_tab]
 
 # ── 차트 ─────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
 ct, cb = st.columns([3, 1])
 with ct:
-    st.markdown(f"<h4 style='color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이 — {col_label}</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
 with cb:
     period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="range_radio")
+
+chart_filter = st.radio("Chart Filter", ["All", "KIMP", "OKX", "비트겟"], horizontal=True, label_visibility="collapsed", key="chart_filter")
 
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
@@ -259,22 +261,44 @@ if not df.empty:
         pdf = pdf.resample('ME').last().dropna()
         xaxis_cfg = dict(tickformat="%Y-%m", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.DateOffset(months=3)], dtick='M1')
 
-    y_data = pdf[col_key] / usdt_rate if is_usd else pdf[col_key]
+    if is_usd:
+        for c in ['총자산', '김프차익', 'OKX통합', '비트겟 현물DCA']:
+            pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=pdf.index, y=y_data, mode='lines', name=col_label,
-        line=dict(color=col_color, width=3),
-        fill='tozeroy', fillcolor=f'rgba({int(col_color[1:3],16)},{int(col_color[3:5],16)},{int(col_color[5:7],16)},0.1)',
-        hovertemplate=f"<b style='color:{col_color}'>{col_label}</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"
-    ))
+    if chart_filter == "All":
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
+            line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
+            hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
+            line=dict(color='#00E676', width=2),
+            hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
+            line=dict(color='#3B82F6', width=2),
+            hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['비트겟 현물DCA'], mode='lines', name='BG DCA',
+            line=dict(color='#F59E0B', width=2),
+            hovertemplate=f"<b style='color:#F59E0B'>BG DCA</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    elif chart_filter == "KIMP":
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
+            line=dict(color='#00E676', width=3), fill='tozeroy', fillcolor='rgba(0,230,118,0.1)',
+            hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    elif chart_filter == "OKX":
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
+            line=dict(color='#3B82F6', width=3), fill='tozeroy', fillcolor='rgba(59,130,246,0.1)',
+            hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    else:
+        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['비트겟 현물DCA'], mode='lines', name='BG DCA',
+            line=dict(color='#F59E0B', width=3), fill='tozeroy', fillcolor='rgba(245,158,11,0.1)',
+            hovertemplate=f"<b style='color:#F59E0B'>BG DCA</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+
     fig.update_layout(
         plot_bgcolor='#171B26', paper_bgcolor='#171B26', font=dict(color='#8B949E'),
         margin=dict(l=10, r=10, t=10, b=10), height=350, hovermode="x unified",
         hoverlabel=dict(bgcolor="#1E2433", bordercolor="#2A2E39", font=dict(color="#E0E0E0", size=13), namelength=-1),
         xaxis=xaxis_cfg,
         yaxis=dict(gridcolor='#2A2E39', tickprefix=currency_sym, tickformat=",.2f" if is_usd else ",.0f"),
-        showlegend=False
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -308,9 +332,23 @@ if not df.empty:
     daily = daily.groupby(daily.index.date).last()
     daily.index = pd.to_datetime(daily.index)
 
-    daily['일손익'] = daily[col_key].diff().fillna(0)
+    daily['일손익_총']   = daily['총자산'].diff().fillna(0)
+    daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
+    daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
+    daily['일손익_BG']   = daily['비트겟 현물DCA'].diff().fillna(0)
 
-    pnl_vals   = daily['일손익']
+    pnl_filter = st.radio("PnL Filter", ["전체", "KIMP", "OKX", "비트겟"], horizontal=True, label_visibility="collapsed", key="pnl_filter")
+
+    if pnl_filter == "KIMP":
+        pnl_col, cum_col = '일손익_김프', '김프차익'
+    elif pnl_filter == "OKX":
+        pnl_col, cum_col = '일손익_OKX', 'OKX통합'
+    elif pnl_filter == "비트겟":
+        pnl_col, cum_col = '일손익_BG', '비트겟 현물DCA'
+    else:
+        pnl_col, cum_col = '일손익_총', '총자산'
+
+    pnl_vals   = daily[pnl_col]
     wins       = (pnl_vals > 0).sum()
     total_days = (pnl_vals != 0).sum()
     win_rate   = wins / total_days * 100 if total_days > 0 else 0
@@ -336,8 +374,8 @@ if not df.empty:
 
     rows_html = ""
     for date, row in daily.sort_index(ascending=False).iterrows():
-        d_val = row['일손익']
-        c_val = row[col_key] - daily[col_key].iloc[0]
+        d_val = row[pnl_col]
+        c_val = row[cum_col] - daily[cum_col].iloc[0]
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
 
