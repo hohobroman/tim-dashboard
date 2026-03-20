@@ -25,8 +25,6 @@ st.markdown("""
     .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 4px; }
     .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 2px 10px; border-radius: 4px; }
     .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 2px 10px; border-radius: 4px; }
-    .tab-btn { display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin-right: 8px; }
-    .tab-btn-active { background: #00E676; color: #000; border-color: #00E676; }
     .pnl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .pnl-table th { color: #8B949E; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #2A2E39; text-align: right; }
     .pnl-table th:first-child { text-align: left; }
@@ -48,6 +46,7 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
+    .section-divider { border: none; border-top: 1px solid #2A2E39; margin: 24px 0; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -90,23 +89,15 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-# ── session state ──────────────────────────────────
 if 'currency' not in st.session_state:
     st.session_state.currency = 'KRW'
-if 'tab' not in st.session_state:
-    st.session_state.tab = 'KIMP'
-
 if st.query_params.get('currency'):
     st.session_state.currency = st.query_params['currency']
-    st.query_params.clear()
-if st.query_params.get('tab'):
-    st.session_state.tab = st.query_params['tab']
     st.query_params.clear()
 
 is_usd = (st.session_state.currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
-active_tab = st.session_state.tab
 
 def fmt(val): return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
@@ -125,11 +116,6 @@ def currency_btn(label):
     active = st.session_state.currency == label
     style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
     return f"<a href='?currency={label}' style='text-decoration:none;'><span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
-
-def tab_btn(label, key):
-    active = active_tab == key
-    cls = "tab-btn tab-btn-active" if active else "tab-btn"
-    return f"<a href='?tab={key}' style='text-decoration:none;'><span class='{cls}'>{label}</span></a>"
 
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
@@ -213,23 +199,6 @@ if not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-# ── 탭 버튼 ───────────────────────────────────────
-st.markdown(f"""
-<div style='margin-bottom:20px;'>
-    {tab_btn('📈 김프차익', 'KIMP')}
-    {tab_btn('🤖 OKX', 'OKX')}
-    {tab_btn('💰 비트겟 DCA', 'BITGET')}
-</div>
-""", unsafe_allow_html=True)
-
-# ── 탭별 설정 ──────────────────────────────────────
-tab_col_map = {
-    'KIMP':   ('김프차익',       '#00E676'),
-    'OKX':    ('OKX통합',        '#3B82F6'),
-    'BITGET': ('비트겟 현물DCA',  '#F59E0B'),
-}
-col_key, col_color = tab_col_map[active_tab]
-
 # ── 차트 ─────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
 ct, cb = st.columns([3, 1])
@@ -302,26 +271,30 @@ if not df.empty:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# ── 포지션 현황 ───────────────────────────────────
+# ── 포지션 현황 (전체) ────────────────────────────
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
-if not pos_df.empty:
-    if active_tab == 'KIMP':
-        filtered = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit'])].copy()
-    elif active_tab == 'OKX':
-        filtered = pos_df[pos_df['거래소'].str.startswith('OKX')].copy()
-    else:
-        filtered = pos_df[pos_df['거래소'].str.startswith('Bitget')].copy()
 
-    if not filtered.empty:
-        if '방향' in filtered.columns:
-            filtered['방향'] = filtered['방향'].replace({'SPOT': 'LONG'})
-        if '종목' in filtered.columns:
-            filtered['종목'] = filtered['종목'].str.replace(':USDT', ' PERP', regex=False)
-        st.dataframe(filtered, use_container_width=True, hide_index=True)
+def show_positions(label, filter_fn, color):
+    st.markdown(f"<div style='color:{color}; font-size:13px; font-weight:600; margin-bottom:6px;'>{label}</div>", unsafe_allow_html=True)
+    if not pos_df.empty:
+        filtered = filter_fn(pos_df)
+        if not filtered.empty:
+            filtered = filtered.copy()
+            if '방향' in filtered.columns:
+                filtered['방향'] = filtered['방향'].replace({'SPOT': 'LONG'})
+            if '종목' in filtered.columns:
+                filtered['종목'] = filtered['종목'].str.replace(':USDT', ' PERP', regex=False)
+            st.dataframe(filtered, use_container_width=True, hide_index=True)
+        else:
+            st.info("현재 포지션이 없습니다.")
     else:
         st.info("현재 포지션이 없습니다.")
-else:
-    st.info("현재 포지션이 없습니다.")
+
+show_positions("📈 김프차익 (업비트 & 바이비트)", lambda d: d[d['거래소'].isin(['Upbit', 'Bybit'])], "#00E676")
+st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
+show_positions("🤖 OKX (시그널봇 & 현물)", lambda d: d[d['거래소'].str.startswith('OKX')], "#3B82F6")
+st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
+show_positions("💰 비트겟 현물 DCA", lambda d: d[d['거래소'].str.startswith('Bitget')], "#F59E0B")
 
 # ── 손익 내역 ─────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
