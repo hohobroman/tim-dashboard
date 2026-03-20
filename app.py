@@ -46,7 +46,6 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
-    .section-divider { border: none; border-top: 1px solid #2A2E39; margin: 24px 0; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -271,30 +270,20 @@ if not df.empty:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# ── 포지션 현황 (전체) ────────────────────────────
+# ── 포지션 현황 ───────────────────────────────────
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
-
-def show_positions(label, filter_fn, color):
-    st.markdown(f"<div style='color:{color}; font-size:13px; font-weight:600; margin-bottom:6px;'>{label}</div>", unsafe_allow_html=True)
-    if not pos_df.empty:
-        filtered = filter_fn(pos_df)
-        if not filtered.empty:
-            filtered = filtered.copy()
-            if '방향' in filtered.columns:
-                filtered['방향'] = filtered['방향'].replace({'SPOT': 'LONG'})
-            if '종목' in filtered.columns:
-                filtered['종목'] = filtered['종목'].str.replace(':USDT', ' PERP', regex=False)
-            st.dataframe(filtered, use_container_width=True, hide_index=True)
-        else:
-            st.info("현재 포지션이 없습니다.")
+if not pos_df.empty:
+    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit']) | pos_df['거래소'].str.startswith('Bitget')].copy()
+    if not show.empty:
+        if '방향' in show.columns:
+            show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
+        if '종목' in show.columns:
+            show['종목'] = show['종목'].str.replace(':USDT', ' PERP', regex=False)
+        st.dataframe(show, use_container_width=True, hide_index=True)
     else:
         st.info("현재 포지션이 없습니다.")
-
-show_positions("📈 김프차익 (업비트 & 바이비트)", lambda d: d[d['거래소'].isin(['Upbit', 'Bybit'])], "#00E676")
-st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
-show_positions("🤖 OKX (시그널봇 & 현물)", lambda d: d[d['거래소'].str.startswith('OKX')], "#3B82F6")
-st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
-show_positions("💰 비트겟 현물 DCA", lambda d: d[d['거래소'].str.startswith('Bitget')], "#F59E0B")
+else:
+    st.info("현재 포지션이 없습니다.")
 
 # ── 손익 내역 ─────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
