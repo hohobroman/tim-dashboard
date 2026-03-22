@@ -25,6 +25,11 @@ st.markdown("""
     .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 4px; }
     .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 2px 10px; border-radius: 4px; }
     .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 2px 10px; border-radius: 4px; }
+    .pos-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pos-table th { color: #8B949E; font-weight: 500; padding: 10px 12px; border-bottom: 1px solid #2A2E39; text-align: left; }
+    .pos-table td { padding: 10px 12px; border-bottom: 1px solid #1E2330; color: #E0E0E0; text-align: left; }
+    .pos-table tr:last-child td { border-bottom: none; }
+    .pos-table tr:hover td { background-color: #1E2330; }
     .pnl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .pnl-table th { color: #8B949E; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #2A2E39; text-align: right; }
     .pnl-table th:first-child { text-align: left; }
@@ -270,7 +275,7 @@ if not df.empty:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# ── 포지션 현황 ───────────────────────────────────
+# ── 포지션 현황 (HTML 테이블) ─────────────────────
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
     show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
@@ -279,7 +284,35 @@ if not pos_df.empty:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
         if '종목' in show.columns:
             show['종목'] = show['종목'].str.replace(':USDT', ' PERP', regex=False)
-        st.dataframe(show, use_container_width=True, hide_index=True)
+
+        headers = show.columns.tolist()
+        rows_html = ""
+        for _, row in show.iterrows():
+            rows_html += "<tr>"
+            for col in headers:
+                val = str(row[col])
+                # 미실현 PNL 색상 처리
+                if col == '미실현 PNL(₩)':
+                    try:
+                        num = float(val.replace('₩', '').replace(',', '').replace('+', ''))
+                        color = "#00E676" if num >= 0 else "#FF5370"
+                        rows_html += f"<td style='color:{color};'>{val}</td>"
+                    except:
+                        rows_html += f"<td>{val}</td>"
+                else:
+                    rows_html += f"<td>{val}</td>"
+            rows_html += "</tr>"
+
+        header_html = "".join(f"<th>{h}</th>" for h in headers)
+        pos_table = f"""
+        <div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;padding:0 4px;overflow-x:auto;'>
+            <table class='pos-table'>
+                <thead><tr>{header_html}</tr></thead>
+                <tbody>{rows_html}</tbody>
+            </table>
+        </div>
+        """
+        st.markdown(pos_table, unsafe_allow_html=True)
     else:
         st.info("현재 포지션이 없습니다.")
 else:
