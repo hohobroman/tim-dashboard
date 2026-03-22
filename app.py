@@ -273,7 +273,7 @@ if not df.empty:
 # ── 포지션 현황 ───────────────────────────────────
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit'])].copy()
+    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
     if not show.empty:
         if '방향' in show.columns:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
