@@ -57,7 +57,7 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── Pill 라디오 버튼 ── */
+    /* ── Pill 라디오 버튼 (All/KIMP/OKX/빙엑스, 4H/D/W/M, 손익필터) ── */
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important;
@@ -140,6 +140,7 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
+# ── session_state 초기화 ──
 if 'currency' not in st.session_state:
     st.session_state['currency'] = 'KRW'
 
@@ -161,7 +162,9 @@ def pct_html(pct):
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
-# ── 헤더 ──────────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 헤더
+# ══════════════════════════════════════════════════
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 
 h1, h2 = st.columns([3, 1])
@@ -180,45 +183,42 @@ with h2:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    btn_cols = st.columns([1, 1])
-    with btn_cols[0]:
-        if st.button("KRW", key="btn_krw",
+    btn_krw, btn_usd = st.columns(2)
+    with btn_krw:
+        if st.button("KRW", key="btn_krw", 
                      type="primary" if not is_usd else "secondary"):
             st.session_state['currency'] = 'KRW'
             st.rerun()
-    with btn_cols[1]:
-        if st.button("USD", key="btn_usd",
+    with btn_usd:
+        if st.button("USD", key="btn_usd", 
                      type="primary" if is_usd else "secondary"):
             st.session_state['currency'] = 'USD'
             st.rerun()
 
 st.markdown("""
 <style>
-/* KRW/USD 버튼 pill 스타일 */
 div[data-testid="stButton"] button[kind="primary"] {
-    background: #00E676 !important; color: #000 !important;
-    border: 1px solid #00E676 !important; border-radius: 20px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    padding: 3px 12px !important; width: auto !important;
-    min-width: 0 !important; box-shadow: none !important;
+    background:#00E676 !important; color:#000 !important;
+    border:1px solid #00E676 !important; border-radius:20px !important;
+    font-size:13px !important; font-weight:600 !important;
+    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
 }
 div[data-testid="stButton"] button[kind="secondary"] {
-    background: transparent !important; color: #8B949E !important;
-    border: 1px solid #2A2E39 !important; border-radius: 20px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    padding: 3px 12px !important; width: auto !important;
-    min-width: 0 !important; box-shadow: none !important;
+    background:transparent !important; color:#8B949E !important;
+    border:1px solid #3A3E4A !important; border-radius:20px !important;
+    font-size:13px !important; font-weight:600 !important;
+    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
 }
 div[data-testid="stButton"] button[kind="secondary"]:hover {
-    background: rgba(255,255,255,0.05) !important;
-    color: #E0E0E0 !important; border-color: #8B949E !important;
+    background:rgba(255,255,255,0.05) !important;
+    color:#E0E0E0 !important; border-color:#8B949E !important;
 }
-/* 버튼 컬럼 간격 */
-div[data-testid="stHorizontalBlock"] { gap: 6px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── 요약 카드 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 요약 카드
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
@@ -285,7 +285,9 @@ if not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-# ── 차트 헤더 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 차트 헤더: 제목 + 필터(왼쪽) | 기간(오른쪽)
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
 title_col, filter_col, spacer_col, period_col = st.columns([2, 5, 1, 2])
@@ -312,7 +314,9 @@ with period_col:
         index=1, key="period_radio"
     )
 
-# ── 차트 ─────────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 차트
+# ══════════════════════════════════════════════════
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
@@ -384,9 +388,11 @@ if not df.empty:
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1, font=dict(color="#E0E0E0"))
     )
-    st.plotly_chart(fig, config={'displayModeBar': False})
+    st.plotly_chart(fig,  config={'displayModeBar': False})
 
-# ── 포지션 현황 ───────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 포지션 현황
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
@@ -422,7 +428,9 @@ if not pos_df.empty:
 else:
     st.info("현재 포지션이 없습니다.")
 
-# ── 손익 내역 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 손익 내역
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
 
