@@ -52,78 +52,77 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ========================================================= */
-    /* 🚀 완벽한 Pill 버튼 디자인 적용을 위한 강력한 CSS         */
-    /* ========================================================= */
+    /* ── 라디오 버튼 완전 재설계 ── */
 
-    /* 1. 라디오 버튼의 기본 타이틀과 동그라미 아이콘 완전히 숨김 */
+    /* 라벨(타이틀) 숨기기 */
     div[data-testid="stRadio"] > label { display: none !important; }
-    div[role="radiogroup"] label div:first-child,
-    div[data-testid="stRadio"] label > div:first-child { 
-        display: none !important; 
-    }
 
-    /* 2. 버튼들을 가로로 나란히 배치 */
-    div[role="radiogroup"], div[data-testid="stRadio"] > div {
-        display: flex !important; 
-        flex-direction: row !important; 
-        gap: 8px !important; 
+    /* 래퍼를 flex row로 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
         background: transparent !important;
-        width: 100% !important;
+        padding: 0 !important;
     }
 
-    /* 3. 테두리가 있는 Pill(알약) 모양 뼈대 디자인 */
-    div[role="radiogroup"] label, div[data-testid="stRadio"] label {
-        display: inline-flex !important; 
-        align-items: center !important; 
-        justify-content: center !important; 
-        background: transparent !important; 
-        border: 1px solid #2A2E39 !important; 
-        border-radius: 20px !important; 
-        padding: 5px 14px !important; 
-        margin: 0 !important; 
-        cursor: pointer !important;
-    }
-
-    /* 4. 선택되지 않은 버튼 텍스트 색상 */
-    div[role="radiogroup"] label p, div[data-testid="stRadio"] label p {
-        color: #8B949E !important; 
-        font-size: 13px !important; 
-        font-weight: 600 !important; 
+    /* 각 라디오 아이템 래퍼 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: transparent !important;
+        border: 1px solid #3A3E4A !important;
+        border-radius: 20px !important;
+        padding: 4px 14px !important;
         margin: 0 !important;
+        cursor: pointer !important;
+        min-width: fit-content !important;
     }
 
-    /* 5. 선택된(Checked) 버튼 기본 동작 - 초록색 (KRW, USD, All, KIMP 등) */
-    div[role="radiogroup"] label:has(input:checked),
-    div[data-testid="stRadio"] label:has(input:checked) { 
-        background: #00E676 !important; 
-        border-color: #00E676 !important; 
-    }
-    div[role="radiogroup"] label:has(input:checked) p,
-    div[data-testid="stRadio"] label:has(input:checked) p { 
-        color: #000 !important; 
+    /* 동그라미 아이콘(첫번째 div) 완전 숨김 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
     }
 
-    /* ── 특정 버튼 커스텀을 위한 마커(Marker) 처리 ── */
-    div.element-container:has(.marker) {
-        display: none !important; /* 마커가 차지하는 공간 삭제 */
+    /* 텍스트 기본 색상 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:last-child p {
+        color: #8B949E !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
+        line-height: 1.4 !important;
     }
 
-    /* 마커 클래스 [align-right]: 해당 위젯 우측 정렬 (KRW/USD, 4H/D/W/M 용) */
-    div.element-container:has(.align-right) + div.element-container div[role="radiogroup"],
-    div.element-container:has(.align-right) + div.element-container div[data-testid="stRadio"] > div {
+    /* 선택된 버튼 - 기본 초록 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+        background: #00E676 !important;
+        border-color: #00E676 !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) > div:last-child p {
+        color: #000000 !important;
+    }
+
+    /* ── 마커 처리 ── */
+    div.element-container:has(.marker) { display: none !important; }
+
+    /* align-right: 우측 정렬 */
+    div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
         justify-content: flex-end !important;
     }
 
-    /* 마커 클래스 [color-red]: 체크 시 빨간색 표시 (4H/D/W/M 용) */
-    div.element-container:has(.color-red) + div.element-container div[role="radiogroup"] label:has(input:checked),
-    div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] label:has(input:checked) {
-        background: #FF5370 !important; 
+    /* color-red: 선택 시 빨간색 */
+    div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+        background: #FF5370 !important;
         border-color: #FF5370 !important;
     }
-    div.element-container:has(.color-red) + div.element-container div[role="radiogroup"] label:has(input:checked) p,
-    div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] label:has(input:checked) p {
-        color: #fff !important;
+    div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) > div:last-child p {
+        color: #ffffff !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -195,7 +194,6 @@ with h2:
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
     </div>
     """, unsafe_allow_html=True)
-    # [수정] KRW/USD: 마커로 우측 정렬 지정
     st.markdown('<span class="marker align-right"></span>', unsafe_allow_html=True)
     currency = st.radio("", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
 
@@ -278,11 +276,9 @@ with chart_h1:
     st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
 
 with chart_h2:
-    # [수정] All/KIMP... : 기본 초록색(기본동작), 왼쪽 정렬(기본동작)
     chart_filter = st.radio("", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
 
 with chart_h3:
-    # [수정] 4H/D/W/M : 마커로 우측 정렬 + 빨간색 지정
     st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
     period = st.radio("", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
 
