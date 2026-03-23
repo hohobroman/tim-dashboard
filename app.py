@@ -277,7 +277,7 @@ if not df.empty:
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
-title_col, filter_col, period_col = st.columns([3, 4, 2])
+title_col, filter_col, spacer_col, period_col = st.columns([3, 4, 2, 2])
 
 with title_col:
     st.markdown(
