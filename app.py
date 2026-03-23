@@ -57,7 +57,7 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── Pill 라디오 버튼 (All/KIMP/OKX/빙엑스, 4H/D/W/M, 손익필터, KRW/USD) ── */
+    /* ── Pill 라디오 버튼 (4H/D/W/M, KRW/USD) ── */
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important;
@@ -87,10 +87,9 @@ st.markdown("""
         color: #000 !important;
     }
 
-    /* ── 마커 처리 (다른 접근 방식: 완벽한 우측 정렬) ── */
+    /* ── 마커 처리 (완벽한 우측 정렬) ── */
     div.element-container:has(.marker) { display: none !important; }
     
-    /* 부모 컨테이너를 flex로 만들고 왼쪽 여백을 최대로 밀어서 오른쪽 끝에 강제로 붙임 */
     div.element-container:has(.align-right) + div.element-container {
         display: flex !important;
         width: 100% !important;
@@ -278,24 +277,17 @@ if not df.empty:
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
-# ── 차트 헤더: 제목 + 필터(왼쪽) | 기간(오른쪽)
+# ── 차트 헤더: 제목(왼쪽) | 기간(오른쪽) (필터 메뉴 제거)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
-title_col, filter_col, spacer_col, period_col = st.columns([2, 5, 1, 2])
+title_col, spacer_col, period_col = st.columns([3, 6, 3])
 
 with title_col:
     st.markdown(
         "<h4 style='color:#E0E0E0;font-weight:600;margin:0;padding-top:5px;white-space:nowrap;'>"
         "📈 누적 손익 추이</h4>",
         unsafe_allow_html=True
-    )
-
-with filter_col:
-    chart_filter = st.radio(
-        "", ["All", "KIMP", "OKX", "빙엑스"],
-        horizontal=True, label_visibility="collapsed",
-        key="chart_filter_radio"
     )
 
 with period_col:
@@ -343,31 +335,19 @@ if not df.empty:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
-    if chart_filter == "All":
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
-            line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
-            hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
-            line=dict(color='#00E676', width=2),
-            hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
-            line=dict(color='#3B82F6', width=2),
-            hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
-            line=dict(color='#F59E0B', width=2),
-            hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif chart_filter == "KIMP":
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
-            line=dict(color='#00E676', width=3), fill='tozeroy', fillcolor='rgba(0,230,118,0.1)',
-            hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif chart_filter == "OKX":
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
-            line=dict(color='#3B82F6', width=3), fill='tozeroy', fillcolor='rgba(59,130,246,0.1)',
-            hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    else:
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
-            line=dict(color='#F59E0B', width=3), fill='tozeroy', fillcolor='rgba(245,158,11,0.1)',
-            hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    # 전체(All) 데이터 고정 출력
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
+        line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
+        hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
+        line=dict(color='#00E676', width=2),
+        hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
+        line=dict(color='#3B82F6', width=2),
+        hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
+        line=dict(color='#F59E0B', width=2),
+        hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
 
     fig.update_layout(
         plot_bgcolor='#171B26', paper_bgcolor='#171B26', font=dict(color='#8B949E'),
@@ -421,7 +401,7 @@ else:
     st.info("현재 포지션이 없습니다.")
 
 # ══════════════════════════════════════════════════
-# ── 손익 내역
+# ── 손익 내역 (필터 메뉴 제거, 전체 데이터만 출력)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
@@ -432,20 +412,9 @@ if not df.empty:
     daily.index = pd.to_datetime(daily.index)
 
     daily['일손익_총']   = daily['총자산'].diff().fillna(0)
-    daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
-    daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
-    daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
-
-    pnl_filter = st.radio(
-        "", ["전체", "KIMP", "OKX", "빙엑스"],
-        horizontal=True, label_visibility="collapsed",
-        key="pnl_filter_radio"
-    )
-
-    if pnl_filter == "KIMP":     pnl_col, cum_col = '일손익_김프', '김프차익'
-    elif pnl_filter == "OKX":    pnl_col, cum_col = '일손익_OKX',  'OKX통합'
-    elif pnl_filter == "빙엑스": pnl_col, cum_col = '일손익_BX',   '빙엑스 현물DCA'
-    else:                         pnl_col, cum_col = '일손익_총',   '총자산'
+    
+    # 전체(All) 컬럼 고정
+    pnl_col, cum_col = '일손익_총', '총자산'
 
     pnl_vals   = daily[pnl_col]
     wins       = (pnl_vals > 0).sum()
