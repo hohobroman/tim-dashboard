@@ -175,33 +175,46 @@ with h1:
         unsafe_allow_html=True
     )
 with h2:
-    # 마지막 업데이트 + KRW/USD 를 하나의 HTML 블록으로
-    krw_s = "background:#00E676;color:#000;border:1px solid #00E676;" if not is_usd else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
-    usd_s = "background:#00E676;color:#000;border:1px solid #00E676;" if is_usd     else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
     st.markdown(f"""
     <div style='display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:8px;'>
         <div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'>
             <div style='color:#8B949E;font-size:12px;'>마지막 업데이트</div>
             <div style='color:#E0E0E0;font-size:14px;font-weight:600;'>{l_time}</div>
         </div>
-        <div style='display:flex;gap:6px;'>
-            <button onclick="window.location.href='?currency=KRW'"
-                style='{krw_s}border-radius:20px;padding:4px 14px;font-size:13px;
-                font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;'>KRW</button>
-            <button onclick="window.location.href='?currency=USD'"
-                style='{usd_s}border-radius:20px;padding:4px 14px;font-size:13px;
-                font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;'>USD</button>
-        </div>
     </div>
     """, unsafe_allow_html=True)
+    btn_krw, btn_usd = st.columns(2)
+    with btn_krw:
+        if st.button("KRW", key="btn_krw", use_container_width=True,
+                     type="primary" if not is_usd else "secondary"):
+            st.session_state['currency'] = 'KRW'
+            st.rerun()
+    with btn_usd:
+        if st.button("USD", key="btn_usd", use_container_width=True,
+                     type="primary" if is_usd else "secondary"):
+            st.session_state['currency'] = 'USD'
+            st.rerun()
 
-# URL 파라미터로 currency 처리 (같은 탭 reload)
-params = st.query_params
-if 'currency' in params:
-    val = params['currency']
-    if val in ('KRW', 'USD') and st.session_state['currency'] != val:
-        st.session_state['currency'] = val
-        st.rerun()
+st.markdown("""
+<style>
+div[data-testid="stButton"] button[kind="primary"] {
+    background:#00E676 !important; color:#000 !important;
+    border:1px solid #00E676 !important; border-radius:20px !important;
+    font-size:13px !important; font-weight:600 !important;
+    padding:4px 0 !important; box-shadow:none !important;
+}
+div[data-testid="stButton"] button[kind="secondary"] {
+    background:transparent !important; color:#8B949E !important;
+    border:1px solid #3A3E4A !important; border-radius:20px !important;
+    font-size:13px !important; font-weight:600 !important;
+    padding:4px 0 !important; box-shadow:none !important;
+}
+div[data-testid="stButton"] button[kind="secondary"]:hover {
+    background:rgba(255,255,255,0.05) !important;
+    color:#E0E0E0 !important; border-color:#8B949E !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
 # ── 요약 카드
@@ -277,7 +290,7 @@ if not df.empty:
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
-title_col, filter_col, spacer_col, period_col = st.columns([3, 4, 2, 2])
+title_col, filter_col, spacer_col, period_col = st.columns([2, 5, 1, 2])
 
 with title_col:
     st.markdown(
