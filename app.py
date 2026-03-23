@@ -13,8 +13,6 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
-    [data-testid="stRadio"] label { color: #E0E0E0 !important; }
-    [data-testid="stRadio"] label p { color: #E0E0E0 !important; }
     .cards-container { display: flex; gap: 12px; margin-top: 16px; margin-bottom: 16px; }
     @media (max-width: 768px) {
         .cards-container { flex-wrap: wrap !important; }
@@ -53,9 +51,17 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
-    .pill-btn { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin: 0 3px; }
-    .pill-btn-active-green { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
-    .pill-btn-active-red { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
+    /* radio를 pill 버튼처럼 */
+    div[data-testid="stRadio"] { gap: 0 !important; }
+    div[data-testid="stRadio"] > div { display: flex !important; flex-direction: row !important; gap: 6px !important; flex-wrap: wrap; }
+    div[data-testid="stRadio"] label { background: transparent; border: 1px solid #2A2E39; border-radius: 20px; padding: 3px 12px !important; color: #8B949E !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; margin: 0 !important; }
+    div[data-testid="stRadio"] label:has(input:checked) { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
+    div[data-testid="stRadio"] label p { color: inherit !important; font-size: 13px !important; margin: 0 !important; }
+    div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
+    /* period radio 활성화 색 빨간색 */
+    .radio-red div[data-testid="stRadio"] label:has(input:checked) { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
+    /* currency radio */
+    .radio-currency div[data-testid="stRadio"] > div { justify-content: flex-end !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -98,25 +104,11 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-# ── session state ──────────────────────────────────
-for key, default in [('currency', 'KRW'), ('period', 'D'), ('chart_filter', 'All'), ('pnl_filter', '전체')]:
-    if key not in st.session_state:
-        st.session_state[key] = default
-
-for key in ['currency', 'period', 'chart_filter', 'pnl_filter']:
-    if st.query_params.get(key):
-        st.session_state[key] = st.query_params[key]
-        st.query_params.clear()
-        st.rerun()
-
-is_usd = (st.session_state.currency == "USD")
-currency_sym = "$" if is_usd else "₩"
-fmt_hover = ",.2f" if is_usd else ",.0f"
-active_period = st.session_state.period
-active_filter = st.session_state.chart_filter
-
-def fmt(val): return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
+def fmt(val):
+    is_usd = st.session_state.get('currency', 'KRW') == 'USD'
+    return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
+    is_usd = st.session_state.get('currency', 'KRW') == 'USD'
     sign = "+" if val >= 0 else ""
     return f"{sign}${val/usdt_rate:,.2f}" if is_usd else f"{sign}₩{int(val):,}"
 def delta_html(val):
@@ -128,28 +120,29 @@ def pct_html(pct):
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
-def pill(label, param, value, active_value, color='green'):
-    is_active = active_value == value
-    cls = f"pill-btn pill-btn-active-{color}" if is_active else "pill-btn"
-    return f'<span class="{cls}" onclick="window.parent.location.href=\'?{param}={value}\'">{label}</span>'
-
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
-st.markdown(f"""
-<div style='position:relative; padding-top:10px; padding-bottom:20px; min-height:110px;'>
-    <h3 style='margin:0; color:#fff; font-weight:700;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>
-    <div style='position:absolute; top:10px; right:0; display:flex; flex-direction:column; align-items:flex-end; gap:8px;'>
+h1, h2 = st.columns([3, 1])
+with h1:
+    st.markdown(f"<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
+with h2:
+    st.markdown(f"""
+    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding-top:8px;'>
         <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
-        <div style='display:flex; gap:6px;'>
-            {pill('KRW', 'currency', 'KRW', st.session_state.currency)}
-            {pill('USD', 'currency', 'USD', st.session_state.currency)}
-        </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    st.markdown('<div class="radio-currency">', unsafe_allow_html=True)
+    currency = st.radio("currency", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+is_usd = (currency == "USD")
+currency_sym = "$" if is_usd else "₩"
+fmt_hover = ",.2f" if is_usd else ",.0f"
+st.session_state['currency'] = currency
 
 # ── 요약 카드 ─────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
@@ -217,40 +210,34 @@ if not df.empty:
 
 # ── 차트 헤더 ─────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
-st.markdown(f"""
-<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
-    <div style='display:flex; align-items:center; gap:12px;'>
-        <h4 style='margin:0; color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>
-        <div>
-            {pill('All', 'chart_filter', 'All', active_filter)}
-            {pill('KIMP', 'chart_filter', 'KIMP', active_filter)}
-            {pill('OKX', 'chart_filter', 'OKX', active_filter)}
-            {pill('빙엑스', 'chart_filter', '빙엑스', active_filter)}
-        </div>
-    </div>
-    <div>
-        {pill('4H', 'period', '4H', active_period, 'red')}
-        {pill('D', 'period', 'D', active_period, 'red')}
-        {pill('W', 'period', 'W', active_period, 'red')}
-        {pill('M', 'period', 'M', active_period, 'red')}
-    </div>
-</div>
-""", unsafe_allow_html=True)
+chart_h1, chart_h2, chart_h3 = st.columns([2, 3, 2])
 
+with chart_h1:
+    st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
+
+with chart_h2:
+    chart_filter = st.radio("chart_filter", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
+
+with chart_h3:
+    st.markdown('<div class="radio-red">', unsafe_allow_html=True)
+    period = st.radio("period", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ── 차트 ─────────────────────────────────────────
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
     today = pd.Timestamp.now()
 
-    if active_period == "4H":
+    if period == "4H":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
         pdf = pdf.resample('4h').last().dropna()
         xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()], dtick=4*60*60*1000, tickangle=0)
-    elif active_period == "D":
+    elif period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
         xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(days=14)], dtick=86400000)
-    elif active_period == "W":
+    elif period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
         pdf = pdf.resample('W-SUN').last().dropna()
         xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(weeks=4)], dtick=7*86400000)
@@ -263,7 +250,7 @@ if not df.empty:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
-    if active_filter == "All":
+    if chart_filter == "All":
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
             line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
             hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
@@ -276,11 +263,11 @@ if not df.empty:
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
             line=dict(color='#F59E0B', width=2),
             hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif active_filter == "KIMP":
+    elif chart_filter == "KIMP":
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
             line=dict(color='#00E676', width=3), fill='tozeroy', fillcolor='rgba(0,230,118,0.1)',
             hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif active_filter == "OKX":
+    elif chart_filter == "OKX":
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
             line=dict(color='#3B82F6', width=3), fill='tozeroy', fillcolor='rgba(59,130,246,0.1)',
             hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
@@ -348,21 +335,13 @@ if not df.empty:
     daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
     daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
 
-    pnl_f = st.session_state.pnl_filter
-    st.markdown(f"""
-    <div style='margin-bottom:12px;'>
-        {pill('전체', 'pnl_filter', '전체', pnl_f)}
-        {pill('KIMP', 'pnl_filter', 'KIMP', pnl_f)}
-        {pill('OKX', 'pnl_filter', 'OKX', pnl_f)}
-        {pill('빙엑스', 'pnl_filter', '빙엑스', pnl_f)}
-    </div>
-    """, unsafe_allow_html=True)
+    pnl_filter = st.radio("pnl_filter", ["전체", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="pnl_filter_radio")
 
-    if pnl_f == "KIMP":
+    if pnl_filter == "KIMP":
         pnl_col, cum_col = '일손익_김프', '김프차익'
-    elif pnl_f == "OKX":
+    elif pnl_filter == "OKX":
         pnl_col, cum_col = '일손익_OKX', 'OKX통합'
-    elif pnl_f == "빙엑스":
+    elif pnl_filter == "빙엑스":
         pnl_col, cum_col = '일손익_BX', '빙엑스 현물DCA'
     else:
         pnl_col, cum_col = '일손익_총', '총자산'
