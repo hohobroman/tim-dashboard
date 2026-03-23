@@ -124,6 +124,16 @@ st.markdown("""
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) > div:last-child p {
         color: #ffffff !important;
     }
+
+    /* ── 헤더 우측 블록: 버튼이 아래 붙도록 gap 제거 ── */
+    div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
+
+    /* Streamlit 컬럼 내부 상단 여백 제거 */
+    div[data-testid="column"] > div { gap: 0 !important; }
+    div[data-testid="column"] > div > div { margin-top: 0 !important; padding-top: 0 !important; }
+
+    /* 헤더 우측 컬럼 전용: 모든 element-container 간격 제거 */
+    .header-right .element-container { margin: 0 !important; padding: 0 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -166,13 +176,15 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
+# ── session_state 초기화 ──
+if 'currency' not in st.session_state:
+    st.session_state['currency'] = 'KRW'
+
 def fmt(val):
-    is_usd = st.session_state.get('currency_radio', 'KRW') == 'USD'
-    return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
+    return f"${val/usdt_rate:,.2f}" if st.session_state['currency'] == 'USD' else f"₩{int(val):,}"
 def fmt_signed(val):
-    is_usd = st.session_state.get('currency_radio', 'KRW') == 'USD'
     sign = "+" if val >= 0 else ""
-    return f"{sign}${val/usdt_rate:,.2f}" if is_usd else f"{sign}₩{int(val):,}"
+    return f"{sign}${val/usdt_rate:,.2f}" if st.session_state['currency'] == 'USD' else f"{sign}₩{int(val):,}"
 def delta_html(val):
     sym = "▲" if val >= 0 else "▼"
     css = "metric-delta-pos" if val >= 0 else "metric-delta-neg"
@@ -183,9 +195,14 @@ def pct_html(pct):
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
 # ══════════════════════════════════════════════════
-# ── 헤더
+# ── 헤더: 제목(왼쪽) | 업데이트+KRW/USD(오른쪽) 한 블록
 # ══════════════════════════════════════════════════
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
+
+is_krw = st.session_state['currency'] == 'KRW'
+krw_style = "background:#00E676;color:#000;border:1px solid #00E676;" if is_krw else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
+usd_style = "background:#00E676;color:#000;border:1px solid #00E676;" if not is_krw else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
+
 h1, h2 = st.columns([3, 1])
 with h1:
     st.markdown(
@@ -194,23 +211,34 @@ with h1:
         unsafe_allow_html=True
     )
 with h2:
-    # 마지막 업데이트 텍스트
+    # 마지막 업데이트 + KRW/USD 버튼을 하나의 HTML 블록으로 통합
     st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding-top:8px;'>
-        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
-        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding-top:8px;'>
+        <div style='display:flex; flex-direction:column; align-items:flex-end; gap:2px;'>
+            <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
+            <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+        </div>
+        <div style='display:flex; gap:6px;'>
+            <a href='?currency=KRW' style='text-decoration:none;'>
+                <span style='display:inline-flex;align-items:center;justify-content:center;
+                    {krw_style}
+                    border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;'>KRW</span>
+            </a>
+            <a href='?currency=USD' style='text-decoration:none;'>
+                <span style='display:inline-flex;align-items:center;justify-content:center;
+                    {usd_style}
+                    border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;'>USD</span>
+            </a>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    # KRW/USD 버튼 — 우측 정렬
-    st.markdown('<span class="marker align-right"></span>', unsafe_allow_html=True)
-    currency = st.radio(
-        "", ["KRW", "USD"],
-        horizontal=True,
-        label_visibility="collapsed",
-        key="currency_radio"
-    )
 
-is_usd = (currency == "USD")
+# URL 파라미터로 currency 상태 처리
+params = st.query_params
+if 'currency' in params:
+    st.session_state['currency'] = params['currency']
+
+is_usd = st.session_state['currency'] == 'USD'
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
 
@@ -284,9 +312,7 @@ if not df.empty:
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
-# ── 차트 헤더
-# 📌 핵심 변경: 제목 + All/KIMP/OKX/빙엑스를 같은 행 왼쪽에,
-#              4H/D/W/M을 같은 행 오른쪽 끝에 배치
+# ── 차트 헤더: 제목 + All/KIMP/OKX/빙엑스(왼쪽) | 4H/D/W/M(오른쪽)
 # ══════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -301,7 +327,6 @@ with chart_left:
             unsafe_allow_html=True
         )
     with filter_col:
-        # All/KIMP/OKX/빙엑스 — 세로 중앙 정렬
         st.markdown('<span class="marker align-center"></span>', unsafe_allow_html=True)
         chart_filter = st.radio(
             "", ["All", "KIMP", "OKX", "빙엑스"],
@@ -311,7 +336,6 @@ with chart_left:
         )
 
 with chart_right:
-    # 4H/D/W/M — 우측 정렬 + 빨간색
     st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
     period = st.radio(
         "", ["4H", "D", "W", "M"],
