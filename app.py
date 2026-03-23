@@ -53,6 +53,8 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
+    .period-btn { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin-left: 6px; }
+    .period-btn-active { background: #FF5370; color: #fff; border-color: #FF5370; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -95,15 +97,24 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
+# ── session state ──────────────────────────────────
 if 'currency' not in st.session_state:
     st.session_state.currency = 'KRW'
-if st.query_params.get('currency'):
-    st.session_state.currency = st.query_params['currency']
-    st.query_params.clear()
+if 'period' not in st.session_state:
+    st.session_state.period = 'D'
+if 'chart_filter' not in st.session_state:
+    st.session_state.chart_filter = 'All'
+
+for key in ['currency', 'period', 'chart_filter']:
+    if st.query_params.get(key):
+        st.session_state[key] = st.query_params[key]
+        st.query_params.clear()
 
 is_usd = (st.session_state.currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
+active_period = st.session_state.period
+active_filter = st.session_state.chart_filter
 
 def fmt(val): return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
@@ -122,6 +133,16 @@ def currency_btn(label):
     active = st.session_state.currency == label
     style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
     return f"<a href='?currency={label}' style='text-decoration:none;'><span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
+
+def period_btn(label):
+    active = active_period == label
+    cls = "period-btn period-btn-active" if active else "period-btn"
+    return f"<a href='?period={label}' style='text-decoration:none;'><span class='{cls}'>{label}</span></a>"
+
+def filter_btn(label):
+    active = active_filter == label
+    style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
+    return f"<a href='?chart_filter={label}' style='text-decoration:none;'><span style='padding:3px 10px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
 
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
@@ -205,30 +226,42 @@ if not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-# ── 차트 ─────────────────────────────────────────
+# ── 차트 헤더 (제목 + 필터 + 기간 한 줄) ──────────
 st.markdown("<br>", unsafe_allow_html=True)
-ct, cb = st.columns([3, 1])
-with ct:
-    st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
-with cb:
-    period = st.radio("Range", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="range_radio")
-
-chart_filter = st.radio("Chart Filter", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter")
+st.markdown(f"""
+<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
+    <div style='display:flex; align-items:center; gap:16px;'>
+        <h4 style='margin:0; color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>
+        <div>
+            {filter_btn('All')}
+            {filter_btn('KIMP')}
+            {filter_btn('OKX')}
+            {filter_btn('빙엑스')}
+        </div>
+    </div>
+    <div>
+        {period_btn('4H')}
+        {period_btn('D')}
+        {period_btn('W')}
+        {period_btn('M')}
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
     today = pd.Timestamp.now()
 
-    if period == "4H":
+    if active_period == "4H":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
         pdf = pdf.resample('4h').last().dropna()
         xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()], dtick=4*60*60*1000, tickangle=0)
-    elif period == "D":
+    elif active_period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
         xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(days=14)], dtick=86400000)
-    elif period == "W":
+    elif active_period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
         pdf = pdf.resample('W-SUN').last().dropna()
         xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(weeks=4)], dtick=7*86400000)
@@ -241,7 +274,7 @@ if not df.empty:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
-    if chart_filter == "All":
+    if active_filter == "All":
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
             line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
             hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
@@ -254,11 +287,11 @@ if not df.empty:
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
             line=dict(color='#F59E0B', width=2),
             hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif chart_filter == "KIMP":
+    elif active_filter == "KIMP":
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
             line=dict(color='#00E676', width=3), fill='tozeroy', fillcolor='rgba(0,230,118,0.1)',
             hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif chart_filter == "OKX":
+    elif active_filter == "OKX":
         fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
             line=dict(color='#3B82F6', width=3), fill='tozeroy', fillcolor='rgba(59,130,246,0.1)',
             hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
