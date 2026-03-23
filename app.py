@@ -62,11 +62,22 @@ st.markdown("""
     div[data-testid="stRadio"] svg { display: none !important; }
     div[data-testid="stRadio"] > div > div { background: transparent !important; }
 
-    /* period 버튼 빨간색 */
-    .radio-red div[data-testid="stRadio"] label:has(input:checked) { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
+    /* ── 개별 라디오 버튼 제어를 위한 마커 스타일 ── */
+    /* 1. 마커가 들어간 컨테이너는 화면에서 완전히 숨김 (공백 차지 방지) */
+    div.element-container:has(.marker-target) { display: none !important; }
 
-    /* currency 우측 정렬 */
-    .radio-currency div[data-testid="stRadio"] > div { justify-content: flex-end !important; }
+    /* 2. period 버튼 (빨간색 & 우측 정렬) */
+    div.element-container:has(.marker-period) + div.element-container div[data-testid="stRadio"] label:has(input:checked) {
+        background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important;
+    }
+    div.element-container:has(.marker-period) + div.element-container div[data-testid="stRadio"] > div {
+        justify-content: flex-end !important;
+    }
+
+    /* 3. currency 버튼 (우측 정렬) */
+    div.element-container:has(.marker-currency) + div.element-container div[data-testid="stRadio"] > div {
+        justify-content: flex-end !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -137,9 +148,8 @@ with h2:
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown('<div class="radio-currency">', unsafe_allow_html=True)
+    st.markdown('<span class="marker-target marker-currency"></span>', unsafe_allow_html=True)
     currency = st.radio("", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 is_usd = (currency == "USD")
 currency_sym = "$" if is_usd else "₩"
@@ -223,9 +233,8 @@ with chart_h2:
     chart_filter = st.radio("", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
 
 with chart_h3:
-    st.markdown('<div class="radio-red">', unsafe_allow_html=True)
+    st.markdown('<span class="marker-target marker-period"></span>', unsafe_allow_html=True)
     period = st.radio("", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ── 차트 ─────────────────────────────────────────
 if not df.empty:
