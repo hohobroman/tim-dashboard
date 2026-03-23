@@ -53,8 +53,19 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
-    .period-btn { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin-left: 6px; }
-    .period-btn-active { background: #FF5370; color: #fff; border-color: #FF5370; }
+    div[data-testid="stHorizontalBlock"] button {
+        background: transparent !important;
+        border: 1px solid #2A2E39 !important;
+        color: #8B949E !important;
+        border-radius: 20px !important;
+        padding: 3px 12px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="stHorizontalBlock"] button:hover {
+        border-color: #E0E0E0 !important;
+        color: #E0E0E0 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -105,16 +116,13 @@ if 'period' not in st.session_state:
 if 'chart_filter' not in st.session_state:
     st.session_state.chart_filter = 'All'
 
-for key in ['currency', 'period', 'chart_filter']:
-    if st.query_params.get(key):
-        st.session_state[key] = st.query_params[key]
-        st.query_params.clear()
+if st.query_params.get('currency'):
+    st.session_state.currency = st.query_params['currency']
+    st.query_params.clear()
 
 is_usd = (st.session_state.currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
-active_period = st.session_state.period
-active_filter = st.session_state.chart_filter
 
 def fmt(val): return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
@@ -133,16 +141,6 @@ def currency_btn(label):
     active = st.session_state.currency == label
     style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
     return f"<a href='?currency={label}' style='text-decoration:none;'><span style='padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
-
-def period_btn(label):
-    active = active_period == label
-    cls = "period-btn period-btn-active" if active else "period-btn"
-    return f"<a href='?period={label}' style='text-decoration:none;'><span class='{cls}'>{label}</span></a>"
-
-def filter_btn(label):
-    active = active_filter == label
-    style = "background:#00E676;color:#000;border:1px solid #00E676;" if active else "background:transparent;color:#8B949E;border:1px solid #2A2E39;"
-    return f"<a href='?chart_filter={label}' style='text-decoration:none;'><span style='padding:3px 10px;border-radius:20px;font-size:13px;font-weight:600;{style}cursor:pointer;'>{label}</span></a>"
 
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
@@ -226,28 +224,36 @@ if not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-# ── 차트 헤더 (제목 + 필터 + 기간 한 줄) ──────────
+# ── 차트 헤더 ─────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
-st.markdown(f"""
-<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
-    <div style='display:flex; align-items:center; gap:16px;'>
-        <h4 style='margin:0; color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>
-        <div>
-            {filter_btn('All')}
-            {filter_btn('KIMP')}
-            {filter_btn('OKX')}
-            {filter_btn('빙엑스')}
-        </div>
-    </div>
-    <div>
-        {period_btn('4H')}
-        {period_btn('D')}
-        {period_btn('W')}
-        {period_btn('M')}
-    </div>
-</div>
-""", unsafe_allow_html=True)
+chart_row = st.columns([2, 3, 2])
 
+with chart_row[0]:
+    st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
+
+with chart_row[1]:
+    f_cols = st.columns(4)
+    for i, label in enumerate(['All', 'KIMP', 'OKX', '빙엑스']):
+        with f_cols[i]:
+            is_active = st.session_state.chart_filter == label
+            btn_style = "background-color:#00E676;color:#000;border:none;" if is_active else ""
+            if st.button(label, key=f"cf_{label}", use_container_width=True):
+                st.session_state.chart_filter = label
+                st.rerun()
+
+with chart_row[2]:
+    p_cols = st.columns(4)
+    for i, label in enumerate(['4H', 'D', 'W', 'M']):
+        with p_cols[i]:
+            is_active = st.session_state.period == label
+            if st.button(label, key=f"p_{label}", use_container_width=True):
+                st.session_state.period = label
+                st.rerun()
+
+active_period = st.session_state.period
+active_filter = st.session_state.chart_filter
+
+# ── 차트 ─────────────────────────────────────────
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
@@ -306,14 +312,11 @@ if not df.empty:
         hoverlabel=dict(bgcolor="#1E2433", bordercolor="#2A2E39", font=dict(color="#E0E0E0", size=13), namelength=-1),
         xaxis=xaxis_cfg,
         yaxis=dict(gridcolor='#2A2E39', tickprefix=currency_sym, tickformat=",.2f" if is_usd else ",.0f"),
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-            font=dict(color="#E0E0E0")
-        )
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#E0E0E0"))
     )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# ── 포지션 현황 (HTML 테이블) ─────────────────────
+# ── 포지션 현황 ───────────────────────────────────
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
     show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
@@ -322,7 +325,6 @@ if not pos_df.empty:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
         if '종목' in show.columns:
             show['종목'] = show['종목'].str.replace(':USDT', ' PERP', regex=False)
-
         headers = show.columns.tolist()
         rows_html = ""
         for _, row in show.iterrows():
@@ -339,17 +341,11 @@ if not pos_df.empty:
                 else:
                     rows_html += f"<td>{val}</td>"
             rows_html += "</tr>"
-
         header_html = "".join(f"<th>{h}</th>" for h in headers)
-        pos_table = f"""
+        st.markdown(f"""
         <div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;padding:0 4px;overflow-x:auto;'>
-            <table class='pos-table'>
-                <thead><tr>{header_html}</tr></thead>
-                <tbody>{rows_html}</tbody>
-            </table>
-        </div>
-        """
-        st.markdown(pos_table, unsafe_allow_html=True)
+            <table class='pos-table'><thead><tr>{header_html}</tr></thead><tbody>{rows_html}</tbody></table>
+        </div>""", unsafe_allow_html=True)
     else:
         st.info("현재 포지션이 없습니다.")
 else:
