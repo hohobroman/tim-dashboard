@@ -13,6 +13,8 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
+    [data-testid="stRadio"] label { color: #E0E0E0 !important; }
+    [data-testid="stRadio"] label p { color: #E0E0E0 !important; }
     .cards-container { display: flex; gap: 12px; margin-top: 16px; margin-bottom: 16px; }
     @media (max-width: 768px) {
         .cards-container { flex-wrap: wrap !important; }
@@ -291,7 +293,6 @@ if not pos_df.empty:
             rows_html += "<tr>"
             for col in headers:
                 val = str(row[col])
-                # 미실현 PNL 색상 처리
                 if col == '미실현 PNL(₩)':
                     try:
                         num = float(val.replace('₩', '').replace(',', '').replace('+', ''))
