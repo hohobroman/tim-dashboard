@@ -52,15 +52,17 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── 라디오를 pill 버튼처럼 ── */
-    div[data-testid="stRadio"] > div { display: flex !important; flex-direction: row !important; gap: 6px !important; flex-wrap: nowrap; align-items: center; }
-    div[data-testid="stRadio"] label { display: inline-flex !important; align-items: center; background: transparent; border: 1px solid #2A2E39; border-radius: 20px; padding: 3px 12px !important; color: #8B949E !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; margin: 0 !important; white-space: nowrap; }
+    /* ── 라디오 → pill 버튼 변환 ── */
+    div[data-testid="stRadio"] > label { display: none !important; }
+    div[data-testid="stRadio"] > div { display: flex !important; flex-direction: row !important; gap: 6px !important; flex-wrap: nowrap; align-items: center; background: transparent !important; }
+    div[data-testid="stRadio"] label { display: inline-flex !important; align-items: center; justify-content: center; background: transparent !important; border: 1px solid #2A2E39 !important; border-radius: 20px !important; padding: 3px 12px !important; color: #8B949E !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer !important; margin: 0 !important; white-space: nowrap; min-height: 0 !important; }
     div[data-testid="stRadio"] label:has(input:checked) { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
-    div[data-testid="stRadio"] label p { color: inherit !important; font-size: 13px !important; margin: 0 !important; line-height: 1.4; }
+    div[data-testid="stRadio"] label p { color: inherit !important; font-size: 13px !important; margin: 0 !important; line-height: 1.4 !important; }
     div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
     div[data-testid="stRadio"] svg { display: none !important; }
+    div[data-testid="stRadio"] > div > div { background: transparent !important; }
 
-    /* period 버튼 — 활성화 빨간색 */
+    /* period 버튼 빨간색 */
     .radio-red div[data-testid="stRadio"] label:has(input:checked) { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
 
     /* currency 우측 정렬 */
@@ -136,7 +138,7 @@ with h2:
     </div>
     """, unsafe_allow_html=True)
     st.markdown('<div class="radio-currency">', unsafe_allow_html=True)
-    currency = st.radio("currency", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
+    currency = st.radio("", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
     st.markdown('</div>', unsafe_allow_html=True)
 
 is_usd = (currency == "USD")
@@ -218,11 +220,11 @@ with chart_h1:
     st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
 
 with chart_h2:
-    chart_filter = st.radio("chart_filter", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
+    chart_filter = st.radio("", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
 
 with chart_h3:
     st.markdown('<div class="radio-red">', unsafe_allow_html=True)
-    period = st.radio("period", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
+    period = st.radio("", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ── 차트 ─────────────────────────────────────────
@@ -337,7 +339,7 @@ if not df.empty:
     daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
     daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
 
-    pnl_filter = st.radio("pnl_filter", ["전체", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="pnl_filter_radio")
+    pnl_filter = st.radio("", ["전체", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="pnl_filter_radio")
 
     if pnl_filter == "KIMP":
         pnl_col, cum_col = '일손익_김프', '김프차익'
