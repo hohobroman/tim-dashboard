@@ -13,6 +13,8 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
+    [data-testid="stRadio"] label { color: #E0E0E0 !important; }
+    [data-testid="stRadio"] label p { color: #E0E0E0 !important; }
     .cards-container { display: flex; gap: 12px; margin-top: 16px; margin-bottom: 16px; }
     @media (max-width: 768px) {
         .cards-container { flex-wrap: wrap !important; }
@@ -51,35 +53,9 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
-    /* 버튼 기본 스타일 */
-    .stButton button {
-        background: transparent !important;
-        border: 1px solid #2A2E39 !important;
-        color: #8B949E !important;
-        border-radius: 20px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        padding: 3px 8px !important;
-        width: 100% !important;
-    }
-    .stButton button:hover {
-        border-color: #E0E0E0 !important;
-        color: #E0E0E0 !important;
-    }
-    /* 활성 버튼 — 녹색 */
-    .btn-active-green button {
-        background: #00E676 !important;
-        color: #000 !important;
-        border-color: #00E676 !important;
-    }
-    /* 활성 버튼 — 빨간 (period) */
-    .btn-active-red button {
-        background: #FF5370 !important;
-        color: #fff !important;
-        border-color: #FF5370 !important;
-    }
-    [data-testid="stRadio"] label { color: #E0E0E0 !important; }
-    [data-testid="stRadio"] label p { color: #E0E0E0 !important; }
+    .pill-btn { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin: 0 3px; text-decoration: none; }
+    .pill-btn-active-green { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
+    .pill-btn-active-red { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -127,6 +103,13 @@ for key, default in [('currency', 'KRW'), ('period', 'D'), ('chart_filter', 'All
     if key not in st.session_state:
         st.session_state[key] = default
 
+# query_params 감지 후 session_state 업데이트
+for key in ['currency', 'period', 'chart_filter', 'pnl_filter']:
+    if st.query_params.get(key):
+        st.session_state[key] = st.query_params[key]
+        st.query_params.clear()
+        st.rerun()
+
 is_usd = (st.session_state.currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
@@ -146,44 +129,28 @@ def pct_html(pct):
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
-def active_btn(is_active, color='green'):
-    return f"btn-active-{color}" if is_active else ""
+def pill(label, param, value, active_value, color='green'):
+    is_active = active_value == value
+    cls = f"pill-btn pill-btn-active-{color}" if is_active else "pill-btn"
+    return f'<a href="?{param}={value}" style="text-decoration:none;" onclick="event.preventDefault();window.location.href=\'?{param}={value}\';"><span class="{cls}">{label}</span></a>'
 
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
-
-h1, h2 = st.columns([3, 1])
-with h1:
-    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
-with h2:
-    st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding-top:8px;'>
+st.markdown(f"""
+<div style='position:relative; padding-top:10px; padding-bottom:20px; min-height:110px;'>
+    <h3 style='margin:0; color:#fff; font-weight:700;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>
+    <div style='position:absolute; top:10px; right:0; display:flex; flex-direction:column; align-items:flex-end; gap:8px;'>
         <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+        <div style='display:flex; gap:6px;'>
+            {pill('KRW', 'currency', 'KRW', st.session_state.currency)}
+            {pill('USD', 'currency', 'USD', st.session_state.currency)}
+        </div>
     </div>
-    """, unsafe_allow_html=True)
-    c_krw, c_usd = st.columns(2)
-    with c_krw:
-        with st.container():
-            if st.session_state.currency == 'KRW':
-                st.markdown('<div class="btn-active-green">', unsafe_allow_html=True)
-            if st.button("KRW", key="btn_krw", use_container_width=True):
-                st.session_state.currency = 'KRW'
-                st.rerun()
-            if st.session_state.currency == 'KRW':
-                st.markdown('</div>', unsafe_allow_html=True)
-    with c_usd:
-        with st.container():
-            if st.session_state.currency == 'USD':
-                st.markdown('<div class="btn-active-green">', unsafe_allow_html=True)
-            if st.button("USD", key="btn_usd", use_container_width=True):
-                st.session_state.currency = 'USD'
-                st.rerun()
-            if st.session_state.currency == 'USD':
-                st.markdown('</div>', unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 # ── 요약 카드 ─────────────────────────────────────
-st.markdown("<br>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
@@ -251,41 +218,26 @@ if not df.empty:
 
 # ── 차트 헤더 ─────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
-chart_row = st.columns([2, 3, 2])
+st.markdown(f"""
+<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
+    <div style='display:flex; align-items:center; gap:12px;'>
+        <h4 style='margin:0; color:#E0E0E0; font-weight:600;'>📈 누적 손익 추이</h4>
+        <div>
+            {pill('All', 'chart_filter', 'All', active_filter)}
+            {pill('KIMP', 'chart_filter', 'KIMP', active_filter)}
+            {pill('OKX', 'chart_filter', 'OKX', active_filter)}
+            {pill('빙엑스', 'chart_filter', '빙엑스', active_filter)}
+        </div>
+    </div>
+    <div>
+        {pill('4H', 'period', '4H', active_period, 'red')}
+        {pill('D', 'period', 'D', active_period, 'red')}
+        {pill('W', 'period', 'W', active_period, 'red')}
+        {pill('M', 'period', 'M', active_period, 'red')}
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-with chart_row[0]:
-    st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
-
-with chart_row[1]:
-    f_cols = st.columns(4)
-    for i, label in enumerate(['All', 'KIMP', 'OKX', '빙엑스']):
-        with f_cols[i]:
-            is_active = st.session_state.chart_filter == label
-            if is_active:
-                st.markdown('<div class="btn-active-green">', unsafe_allow_html=True)
-            if st.button(label, key=f"cf_{label}", use_container_width=True):
-                st.session_state.chart_filter = label
-                st.rerun()
-            if is_active:
-                st.markdown('</div>', unsafe_allow_html=True)
-
-with chart_row[2]:
-    p_cols = st.columns(4)
-    for i, label in enumerate(['4H', 'D', 'W', 'M']):
-        with p_cols[i]:
-            is_active = st.session_state.period == label
-            if is_active:
-                st.markdown('<div class="btn-active-red">', unsafe_allow_html=True)
-            if st.button(label, key=f"p_{label}", use_container_width=True):
-                st.session_state.period = label
-                st.rerun()
-            if is_active:
-                st.markdown('</div>', unsafe_allow_html=True)
-
-active_period = st.session_state.period
-active_filter = st.session_state.chart_filter
-
-# ── 차트 ─────────────────────────────────────────
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
@@ -397,25 +349,21 @@ if not df.empty:
     daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
     daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
 
-    pnl_cols = st.columns(4)
-    pnl_labels = ['전체', 'KIMP', 'OKX', '빙엑스']
-    for i, label in enumerate(pnl_labels):
-        with pnl_cols[i]:
-            is_active = st.session_state.pnl_filter == label
-            if is_active:
-                st.markdown('<div class="btn-active-green">', unsafe_allow_html=True)
-            if st.button(label, key=f"pnl_{label}", use_container_width=True):
-                st.session_state.pnl_filter = label
-                st.rerun()
-            if is_active:
-                st.markdown('</div>', unsafe_allow_html=True)
+    pnl_f = st.session_state.pnl_filter
+    st.markdown(f"""
+    <div style='margin-bottom:12px;'>
+        {pill('전체', 'pnl_filter', '전체', pnl_f)}
+        {pill('KIMP', 'pnl_filter', 'KIMP', pnl_f)}
+        {pill('OKX', 'pnl_filter', 'OKX', pnl_f)}
+        {pill('빙엑스', 'pnl_filter', '빙엑스', pnl_f)}
+    </div>
+    """, unsafe_allow_html=True)
 
-    pnl_filter = st.session_state.pnl_filter
-    if pnl_filter == "KIMP":
+    if pnl_f == "KIMP":
         pnl_col, cum_col = '일손익_김프', '김프차익'
-    elif pnl_filter == "OKX":
+    elif pnl_f == "OKX":
         pnl_col, cum_col = '일손익_OKX', 'OKX통합'
-    elif pnl_filter == "빙엑스":
+    elif pnl_f == "빙엑스":
         pnl_col, cum_col = '일손익_BX', '빙엑스 현물DCA'
     else:
         pnl_col, cum_col = '일손익_총', '총자산'
