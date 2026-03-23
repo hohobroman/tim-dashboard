@@ -52,21 +52,79 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── 라디오 → pill 버튼 변환 ── */
+    /* ========================================================= */
+    /* 🚀 완벽한 Pill 버튼 디자인 적용을 위한 강력한 CSS         */
+    /* ========================================================= */
+
+    /* 1. 라디오 버튼의 기본 타이틀과 동그라미 아이콘 완전히 숨김 */
     div[data-testid="stRadio"] > label { display: none !important; }
-    div[data-testid="stRadio"] > div { display: flex !important; flex-direction: row !important; gap: 6px !important; flex-wrap: nowrap; align-items: center; background: transparent !important; }
-    div[data-testid="stRadio"] label { display: inline-flex !important; align-items: center; justify-content: center; background: transparent !important; border: 1px solid #2A2E39 !important; border-radius: 20px !important; padding: 3px 12px !important; color: #8B949E !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer !important; margin: 0 !important; white-space: nowrap; min-height: 0 !important; }
-    div[data-testid="stRadio"] label:has(input:checked) { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
-    div[data-testid="stRadio"] label p { color: inherit !important; font-size: 13px !important; margin: 0 !important; line-height: 1.4 !important; }
-    div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
-    div[data-testid="stRadio"] svg { display: none !important; }
-    div[data-testid="stRadio"] > div > div { background: transparent !important; }
+    div[role="radiogroup"] label div:first-child,
+    div[data-testid="stRadio"] label > div:first-child { 
+        display: none !important; 
+    }
 
-    /* period 버튼 빨간색 */
-    .radio-red div[data-testid="stRadio"] label:has(input:checked) { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
+    /* 2. 버튼들을 가로로 나란히 배치 */
+    div[role="radiogroup"], div[data-testid="stRadio"] > div {
+        display: flex !important; 
+        flex-direction: row !important; 
+        gap: 8px !important; 
+        background: transparent !important;
+        width: 100% !important;
+    }
 
-    /* currency 우측 정렬 */
-    .radio-currency div[data-testid="stRadio"] > div { justify-content: flex-end !important; }
+    /* 3. 테두리가 있는 Pill(알약) 모양 뼈대 디자인 */
+    div[role="radiogroup"] label, div[data-testid="stRadio"] label {
+        display: inline-flex !important; 
+        align-items: center !important; 
+        justify-content: center !important; 
+        background: transparent !important; 
+        border: 1px solid #2A2E39 !important; 
+        border-radius: 20px !important; 
+        padding: 5px 14px !important; 
+        margin: 0 !important; 
+        cursor: pointer !important;
+    }
+
+    /* 4. 선택되지 않은 버튼 텍스트 색상 */
+    div[role="radiogroup"] label p, div[data-testid="stRadio"] label p {
+        color: #8B949E !important; 
+        font-size: 13px !important; 
+        font-weight: 600 !important; 
+        margin: 0 !important;
+    }
+
+    /* 5. 선택된(Checked) 버튼 기본 동작 - 초록색 (KRW, USD, All, KIMP 등) */
+    div[role="radiogroup"] label:has(input:checked),
+    div[data-testid="stRadio"] label:has(input:checked) { 
+        background: #00E676 !important; 
+        border-color: #00E676 !important; 
+    }
+    div[role="radiogroup"] label:has(input:checked) p,
+    div[data-testid="stRadio"] label:has(input:checked) p { 
+        color: #000 !important; 
+    }
+
+    /* ── 특정 버튼 커스텀을 위한 마커(Marker) 처리 ── */
+    div.element-container:has(.marker) {
+        display: none !important; /* 마커가 차지하는 공간 삭제 */
+    }
+
+    /* 마커 클래스 [align-right]: 해당 위젯 우측 정렬 (KRW/USD, 4H/D/W/M 용) */
+    div.element-container:has(.align-right) + div.element-container div[role="radiogroup"],
+    div.element-container:has(.align-right) + div.element-container div[data-testid="stRadio"] > div {
+        justify-content: flex-end !important;
+    }
+
+    /* 마커 클래스 [color-red]: 체크 시 빨간색 표시 (4H/D/W/M 용) */
+    div.element-container:has(.color-red) + div.element-container div[role="radiogroup"] label:has(input:checked),
+    div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] label:has(input:checked) {
+        background: #FF5370 !important; 
+        border-color: #FF5370 !important;
+    }
+    div.element-container:has(.color-red) + div.element-container div[role="radiogroup"] label:has(input:checked) p,
+    div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] label:has(input:checked) p {
+        color: #fff !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -137,9 +195,9 @@ with h2:
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown('<div class="radio-currency">', unsafe_allow_html=True)
+    # [수정] KRW/USD: 마커로 우측 정렬 지정
+    st.markdown('<span class="marker align-right"></span>', unsafe_allow_html=True)
     currency = st.radio("", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 is_usd = (currency == "USD")
 currency_sym = "$" if is_usd else "₩"
@@ -220,12 +278,13 @@ with chart_h1:
     st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
 
 with chart_h2:
+    # [수정] All/KIMP... : 기본 초록색(기본동작), 왼쪽 정렬(기본동작)
     chart_filter = st.radio("", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
 
 with chart_h3:
-    st.markdown('<div class="radio-red">', unsafe_allow_html=True)
+    # [수정] 4H/D/W/M : 마커로 우측 정렬 + 빨간색 지정
+    st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
     period = st.radio("", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ── 차트 ─────────────────────────────────────────
 if not df.empty:
