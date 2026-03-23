@@ -53,7 +53,7 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
-    .pill-btn { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin: 0 3px; text-decoration: none; }
+    .pill-btn { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #2A2E39; color: #8B949E; background: transparent; margin: 0 3px; }
     .pill-btn-active-green { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
     .pill-btn-active-red { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
     </style>
@@ -103,7 +103,6 @@ for key, default in [('currency', 'KRW'), ('period', 'D'), ('chart_filter', 'All
     if key not in st.session_state:
         st.session_state[key] = default
 
-# query_params 감지 후 session_state 업데이트
 for key in ['currency', 'period', 'chart_filter', 'pnl_filter']:
     if st.query_params.get(key):
         st.session_state[key] = st.query_params[key]
@@ -132,7 +131,7 @@ def pct_html(pct):
 def pill(label, param, value, active_value, color='green'):
     is_active = active_value == value
     cls = f"pill-btn pill-btn-active-{color}" if is_active else "pill-btn"
-    return f'<a href="?{param}={value}" style="text-decoration:none;" onclick="event.preventDefault();window.location.href=\'?{param}={value}\';"><span class="{cls}">{label}</span></a>'
+    return f'<span class="{cls}" onclick="window.location.href=\'?{param}={value}\'">{label}</span>'
 
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
