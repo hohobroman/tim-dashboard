@@ -185,12 +185,12 @@ with h2:
     """, unsafe_allow_html=True)
     btn_krw, btn_usd = st.columns(2)
     with btn_krw:
-        if st.button("KRW", key="btn_krw", use_container_width=True,
+        if st.button("KRW", key="btn_krw", 
                      type="primary" if not is_usd else "secondary"):
             st.session_state['currency'] = 'KRW'
             st.rerun()
     with btn_usd:
-        if st.button("USD", key="btn_usd", use_container_width=True,
+        if st.button("USD", key="btn_usd", 
                      type="primary" if is_usd else "secondary"):
             st.session_state['currency'] = 'USD'
             st.rerun()
@@ -201,13 +201,13 @@ div[data-testid="stButton"] button[kind="primary"] {
     background:#00E676 !important; color:#000 !important;
     border:1px solid #00E676 !important; border-radius:20px !important;
     font-size:13px !important; font-weight:600 !important;
-    padding:4px 0 !important; box-shadow:none !important;
+    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
 }
 div[data-testid="stButton"] button[kind="secondary"] {
     background:transparent !important; color:#8B949E !important;
     border:1px solid #3A3E4A !important; border-radius:20px !important;
     font-size:13px !important; font-weight:600 !important;
-    padding:4px 0 !important; box-shadow:none !important;
+    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
 }
 div[data-testid="stButton"] button[kind="secondary"]:hover {
     background:rgba(255,255,255,0.05) !important;
@@ -388,7 +388,7 @@ if not df.empty:
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1, font=dict(color="#E0E0E0"))
     )
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig,  config={'displayModeBar': False})
 
 # ══════════════════════════════════════════════════
 # ── 포지션 현황
