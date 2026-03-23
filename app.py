@@ -57,7 +57,7 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── Pill 라디오 버튼 (All/KIMP/OKX/빙엑스, 4H/D/W/M, 손익필터) ── */
+    /* ── Pill 라디오 버튼 (All/KIMP/OKX/빙엑스, 4H/D/W/M, 손익필터, KRW/USD) ── */
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important;
@@ -183,38 +183,19 @@ with h2:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    btn_krw, btn_usd = st.columns(2)
-    with btn_krw:
-        if st.button("KRW", key="btn_krw", 
-                     type="primary" if not is_usd else "secondary"):
-            st.session_state['currency'] = 'KRW'
-            st.rerun()
-    with btn_usd:
-        if st.button("USD", key="btn_usd", 
-                     type="primary" if is_usd else "secondary"):
-            st.session_state['currency'] = 'USD'
-            st.rerun()
-
-st.markdown("""
-<style>
-div[data-testid="stButton"] button[kind="primary"] {
-    background:#00E676 !important; color:#000 !important;
-    border:1px solid #00E676 !important; border-radius:20px !important;
-    font-size:13px !important; font-weight:600 !important;
-    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
-}
-div[data-testid="stButton"] button[kind="secondary"] {
-    background:transparent !important; color:#8B949E !important;
-    border:1px solid #3A3E4A !important; border-radius:20px !important;
-    font-size:13px !important; font-weight:600 !important;
-    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
-}
-div[data-testid="stButton"] button[kind="secondary"]:hover {
-    background:rgba(255,255,255,0.05) !important;
-    color:#E0E0E0 !important; border-color:#8B949E !important;
-}
-</style>
-""", unsafe_allow_html=True)
+    
+    st.markdown('<span class="marker align-right"></span>', unsafe_allow_html=True)
+    curr_choice = st.radio(
+        "", ["KRW", "USD"],
+        horizontal=True, 
+        label_visibility="collapsed",
+        index=1 if is_usd else 0,
+        key="currency_radio"
+    )
+    
+    if curr_choice != st.session_state['currency']:
+        st.session_state['currency'] = curr_choice
+        st.rerun()
 
 # ══════════════════════════════════════════════════
 # ── 요약 카드
