@@ -51,16 +51,19 @@ st.markdown("""
     .alloc-bar-bg { flex: 1; background-color: #2A2E39; border-radius: 3px; height: 6px; }
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
-    /* radio를 pill 버튼처럼 */
-    div[data-testid="stRadio"] { gap: 0 !important; }
-    div[data-testid="stRadio"] > div { display: flex !important; flex-direction: row !important; gap: 6px !important; flex-wrap: wrap; }
-    div[data-testid="stRadio"] label { background: transparent; border: 1px solid #2A2E39; border-radius: 20px; padding: 3px 12px !important; color: #8B949E !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; margin: 0 !important; }
+
+    /* ── 라디오를 pill 버튼처럼 ── */
+    div[data-testid="stRadio"] > div { display: flex !important; flex-direction: row !important; gap: 6px !important; flex-wrap: nowrap; align-items: center; }
+    div[data-testid="stRadio"] label { display: inline-flex !important; align-items: center; background: transparent; border: 1px solid #2A2E39; border-radius: 20px; padding: 3px 12px !important; color: #8B949E !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; margin: 0 !important; white-space: nowrap; }
     div[data-testid="stRadio"] label:has(input:checked) { background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }
-    div[data-testid="stRadio"] label p { color: inherit !important; font-size: 13px !important; margin: 0 !important; }
+    div[data-testid="stRadio"] label p { color: inherit !important; font-size: 13px !important; margin: 0 !important; line-height: 1.4; }
     div[data-testid="stRadio"] input[type="radio"] { display: none !important; }
-    /* period radio 활성화 색 빨간색 */
+    div[data-testid="stRadio"] svg { display: none !important; }
+
+    /* period 버튼 — 활성화 빨간색 */
     .radio-red div[data-testid="stRadio"] label:has(input:checked) { background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }
-    /* currency radio */
+
+    /* currency 우측 정렬 */
     .radio-currency div[data-testid="stRadio"] > div { justify-content: flex-end !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -105,10 +108,10 @@ usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
 def fmt(val):
-    is_usd = st.session_state.get('currency', 'KRW') == 'USD'
+    is_usd = st.session_state.get('currency_radio', 'KRW') == 'USD'
     return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
-    is_usd = st.session_state.get('currency', 'KRW') == 'USD'
+    is_usd = st.session_state.get('currency_radio', 'KRW') == 'USD'
     sign = "+" if val >= 0 else ""
     return f"{sign}${val/usdt_rate:,.2f}" if is_usd else f"{sign}₩{int(val):,}"
 def delta_html(val):
@@ -124,7 +127,7 @@ def pct_html(pct):
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 h1, h2 = st.columns([3, 1])
 with h1:
-    st.markdown(f"<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
 with h2:
     st.markdown(f"""
     <div style='display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding-top:8px;'>
@@ -139,7 +142,6 @@ with h2:
 is_usd = (currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
-st.session_state['currency'] = currency
 
 # ── 요약 카드 ─────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
