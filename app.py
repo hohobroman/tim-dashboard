@@ -131,7 +131,7 @@ def pct_html(pct):
 def pill(label, param, value, active_value, color='green'):
     is_active = active_value == value
     cls = f"pill-btn pill-btn-active-{color}" if is_active else "pill-btn"
-    return f'<span class="{cls}" onclick="window.location.href=\'?{param}={value}\'">{label}</span>'
+    return f'<span class="{cls}" onclick="window.parent.location.href=\'?{param}={value}\'">{label}</span>'
 
 # ── 헤더 ──────────────────────────────────────────
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
