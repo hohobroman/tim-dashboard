@@ -87,14 +87,17 @@ st.markdown("""
         color: #000 !important;
     }
 
-    /* ── 마커 처리 (이 부분 CSS가 강화되었습니다) ── */
+    /* ── 마커 처리 (다른 접근 방식: 완벽한 우측 정렬) ── */
     div.element-container:has(.marker) { display: none !important; }
     
-    /* 부모 컨테이너가 꽉 차도록 하여 우측 정렬 강제 */
-    div.element-container:has(.align-right) + div.element-container div[data-testid="stRadio"] {
-        width: 100% !important;
+    /* 부모 컨테이너를 flex로 만들고 왼쪽 여백을 최대로 밀어서 오른쪽 끝에 강제로 붙임 */
+    div.element-container:has(.align-right) + div.element-container {
         display: flex !important;
-        justify-content: flex-end !important;
+        width: 100% !important;
+    }
+    div.element-container:has(.align-right) + div.element-container > div {
+        margin-left: auto !important; 
+        width: auto !important;
     }
     div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
         justify-content: flex-end !important;
