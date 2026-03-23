@@ -57,7 +57,7 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── 라디오 버튼 (4H/D/W/M 및 손익 필터용) ── */
+    /* ── Pill 라디오 버튼 (All/KIMP/OKX/빙엑스, 4H/D/W/M, 손익필터) ── */
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important;
@@ -84,7 +84,7 @@ st.markdown("""
         background: #00E676 !important; border-color: #00E676 !important;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) > div:last-child p {
-        color: #000000 !important;
+        color: #000 !important;
     }
 
     /* ── 마커 처리 ── */
@@ -96,32 +96,9 @@ st.markdown("""
         background: #FF5370 !important; border-color: #FF5370 !important;
     }
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) > div:last-child p {
-        color: #ffffff !important;
+        color: #fff !important;
     }
-
-    /* ── pill-btn: KRW/USD / All/KIMP/OKX/빙엑스 HTML 버튼 ── */
-    .pill-btn {
-        display: inline-flex; align-items: center; justify-content: center;
-        border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600;
-        cursor: pointer; border: 1px solid #3A3E4A; background: transparent;
-        color: #8B949E; font-family: 'Pretendard', sans-serif;
-        text-decoration: none; white-space: nowrap;
-    }
-    .pill-btn.active-green { background: #00E676 !important; border-color: #00E676 !important; color: #000 !important; }
-    .pill-btn.active-red   { background: #FF5370 !important; border-color: #FF5370 !important; color: #fff !important; }
     </style>
-""", unsafe_allow_html=True)
-
-# ── JavaScript: pill 버튼 클릭 → query param 변경 (새 창 없이) ──
-st.markdown("""
-<script>
-function setParam(key, val) {
-    const url = new URL(window.location.href);
-    url.searchParams.set(key, val);
-    window.history.replaceState({}, '', url);
-    window.location.href = url.toString();  // same tab reload
-}
-</script>
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=5)
@@ -167,11 +144,15 @@ df, pos_df, transfer_df = load_data()
 if 'currency' not in st.session_state:
     st.session_state['currency'] = 'KRW'
 
+is_usd = st.session_state['currency'] == 'USD'
+currency_sym = "$" if is_usd else "₩"
+fmt_hover = ",.2f" if is_usd else ",.0f"
+
 def fmt(val):
-    return f"${val/usdt_rate:,.2f}" if st.session_state['currency'] == 'USD' else f"₩{int(val):,}"
+    return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
     sign = "+" if val >= 0 else ""
-    return f"{sign}${val/usdt_rate:,.2f}" if st.session_state['currency'] == 'USD' else f"{sign}₩{int(val):,}"
+    return f"{sign}${val/usdt_rate:,.2f}" if is_usd else f"{sign}₩{int(val):,}"
 def delta_html(val):
     sym = "▲" if val >= 0 else "▼"
     css = "metric-delta-pos" if val >= 0 else "metric-delta-neg"
@@ -180,10 +161,6 @@ def pct_html(pct):
     sign = "+" if pct >= 0 else ""
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
-
-is_usd = st.session_state['currency'] == 'USD'
-currency_sym = "$" if is_usd else "₩"
-fmt_hover = ",.2f" if is_usd else ",.0f"
 
 # ══════════════════════════════════════════════════
 # ── 헤더
@@ -198,67 +175,33 @@ with h1:
         unsafe_allow_html=True
     )
 with h2:
-    # 마지막 업데이트 HTML
+    # 마지막 업데이트 + KRW/USD 를 하나의 HTML 블록으로
+    krw_s = "background:#00E676;color:#000;border:1px solid #00E676;" if not is_usd else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
+    usd_s = "background:#00E676;color:#000;border:1px solid #00E676;" if is_usd     else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
     st.markdown(f"""
-    <div style='display:flex; flex-direction:column; align-items:flex-end; gap:2px; padding-top:8px;'>
-        <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
-        <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
+    <div style='display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:8px;'>
+        <div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'>
+            <div style='color:#8B949E;font-size:12px;'>마지막 업데이트</div>
+            <div style='color:#E0E0E0;font-size:14px;font-weight:600;'>{l_time}</div>
+        </div>
+        <div style='display:flex;gap:6px;'>
+            <button onclick="window.location.href='?currency=KRW'"
+                style='{krw_s}border-radius:20px;padding:4px 14px;font-size:13px;
+                font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;'>KRW</button>
+            <button onclick="window.location.href='?currency=USD'"
+                style='{usd_s}border-radius:20px;padding:4px 14px;font-size:13px;
+                font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;'>USD</button>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # KRW / USD — st.button으로 같은 창 전환
-    c_krw, c_usd = st.columns(2)
-    with c_krw:
-        krw_type = "primary" if not is_usd else "secondary"
-        if st.button("KRW", key="btn_krw", type=krw_type, use_container_width=True):
-            st.session_state['currency'] = 'KRW'
-            st.rerun()
-    with c_usd:
-        usd_type = "primary" if is_usd else "secondary"
-        if st.button("USD", key="btn_usd", type=usd_type, use_container_width=True):
-            st.session_state['currency'] = 'USD'
-            st.rerun()
-
-# st.button 스타일 덮어쓰기 — primary=초록, secondary=테두리만
-st.markdown("""
-<style>
-/* primary 버튼 → 초록 pill */
-div[data-testid="stButton"] button[kind="primary"] {
-    background: #00E676 !important;
-    color: #000 !important;
-    border: 1px solid #00E676 !important;
-    border-radius: 20px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 4px 14px !important;
-    height: auto !important;
-    min-height: 0 !important;
-    line-height: 1.6 !important;
-    box-shadow: none !important;
-}
-/* secondary 버튼 → 테두리 pill */
-div[data-testid="stButton"] button[kind="secondary"] {
-    background: transparent !important;
-    color: #8B949E !important;
-    border: 1px solid #3A3E4A !important;
-    border-radius: 20px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 4px 14px !important;
-    height: auto !important;
-    min-height: 0 !important;
-    line-height: 1.6 !important;
-    box-shadow: none !important;
-}
-div[data-testid="stButton"] button[kind="secondary"]:hover {
-    background: rgba(255,255,255,0.05) !important;
-    color: #E0E0E0 !important;
-    border-color: #8B949E !important;
-}
-/* 버튼 컨테이너 간격 제거 */
-div[data-testid="stHorizontalBlock"] { gap: 4px !important; }
-</style>
-""", unsafe_allow_html=True)
+# URL 파라미터로 currency 처리 (같은 탭 reload)
+params = st.query_params
+if 'currency' in params:
+    val = params['currency']
+    if val in ('KRW', 'USD') and st.session_state['currency'] != val:
+        st.session_state['currency'] = val
+        st.rerun()
 
 # ══════════════════════════════════════════════════
 # ── 요약 카드
@@ -330,119 +273,33 @@ if not df.empty:
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
-# ── 차트 헤더
-# 📌 "📈 누적 손익 추이  All KIMP OKX 빙엑스" 한 줄 왼쪽
-#    "4H  D  W  M" 한 줄 오른쪽 끝
-# → 전체를 순수 HTML 한 줄로 렌더링하고,
-#   라디오 상태는 hidden st.radio로 관리
+# ── 차트 헤더: 제목 + 필터(왼쪽) | 기간(오른쪽)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
-# 실제 상태 관리용 hidden radio (화면엔 안 보임, session_state만 씀)
-if 'chart_filter' not in st.session_state:
-    st.session_state['chart_filter'] = 'All'
-if 'period' not in st.session_state:
-    st.session_state['period'] = 'D'
+title_col, filter_col, period_col = st.columns([3, 4, 2])
 
-chart_filter = st.session_state['chart_filter']
-period       = st.session_state['period']
-
-filters  = ["All", "KIMP", "OKX", "빙엑스"]
-periods  = ["4H", "D", "W", "M"]
-
-def pill(label, active, color="green"):
-    if active:
-        bg = "#00E676" if color == "green" else "#FF5370"
-        fc = "#000" if color == "green" else "#fff"
-        style = f"background:{bg};border:1px solid {bg};color:{fc};"
-    else:
-        style = "background:transparent;border:1px solid #3A3E4A;color:#8B949E;"
-    return (
-        f"<span style='display:inline-flex;align-items:center;justify-content:center;"
-        f"border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;"
-        f"cursor:pointer;white-space:nowrap;{style}'>{label}</span>"
+with title_col:
+    st.markdown(
+        "<h4 style='color:#E0E0E0;font-weight:600;margin:0;padding-top:5px;white-space:nowrap;'>"
+        "📈 누적 손익 추이</h4>",
+        unsafe_allow_html=True
     )
 
-filter_pills = " ".join(pill(f, f == chart_filter, "green") for f in filters)
-period_pills = " ".join(pill(p, p == period, "red")   for p in periods)
+with filter_col:
+    chart_filter = st.radio(
+        "", ["All", "KIMP", "OKX", "빙엑스"],
+        horizontal=True, label_visibility="collapsed",
+        key="chart_filter_radio"
+    )
 
-# 한 줄 HTML: 왼쪽(제목+필터) | 오른쪽(기간)
-st.markdown(f"""
-<div style='display:flex; align-items:center; justify-content:space-between; width:100%;'>
-    <div style='display:flex; align-items:center; gap:16px;'>
-        <h4 style='color:#E0E0E0; font-weight:600; margin:0; white-space:nowrap;'>📈 누적 손익 추이</h4>
-        <div style='display:flex; gap:6px; align-items:center;'>{filter_pills}</div>
-    </div>
-    <div style='display:flex; gap:6px; align-items:center;'>{period_pills}</div>
-</div>
-""", unsafe_allow_html=True)
-
-# 클릭 감지용 hidden radio — 화면에서 완전히 숨김
-st.markdown("""
-<style>
-div[data-testid="stRadio"].hidden-radio { display: none !important; }
-</style>
-""", unsafe_allow_html=True)
-
-# ── 버튼 클릭 처리: components.html iframe으로 postMessage ──
-# 대신 더 간단하게: 각 버튼을 st.button으로 처리 (HTML 위에 투명하게 올리기 어려움)
-# → 실용적 해결: st.columns로 버튼 나열하되 CSS로 pill 모양 강제
-
-st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
-
-# filter 버튼 행
-fc1, fc2, fc3, fc4, fsp, pc1, pc2, pc3, pc4 = st.columns([1,1,1,1, 5, 1,1,1,1])
-
-with fc1:
-    if st.button("All",  key="f_all",  use_container_width=True):
-        st.session_state['chart_filter'] = 'All';  st.rerun()
-with fc2:
-    if st.button("KIMP", key="f_kimp", use_container_width=True):
-        st.session_state['chart_filter'] = 'KIMP'; st.rerun()
-with fc3:
-    if st.button("OKX",  key="f_okx",  use_container_width=True):
-        st.session_state['chart_filter'] = 'OKX';  st.rerun()
-with fc4:
-    if st.button("빙엑스", key="f_bx", use_container_width=True):
-        st.session_state['chart_filter'] = '빙엑스'; st.rerun()
-with pc1:
-    if st.button("4H", key="p_4h", use_container_width=True):
-        st.session_state['period'] = '4H'; st.rerun()
-with pc2:
-    if st.button("D",  key="p_d",  use_container_width=True):
-        st.session_state['period'] = 'D';  st.rerun()
-with pc3:
-    if st.button("W",  key="p_w",  use_container_width=True):
-        st.session_state['period'] = 'W';  st.rerun()
-with pc4:
-    if st.button("M",  key="p_m",  use_container_width=True):
-        st.session_state['period'] = 'M';  st.rerun()
-
-# 버튼 행 스타일: 선택된 것 초록/빨강, 나머지 테두리
-st.markdown(f"""
-<style>
-/* filter 버튼 — 선택 초록 */
-div[data-testid="stButton"]:has(button[data-testid="baseButton-secondary"]) button {{
-    background: transparent !important; color: #8B949E !important;
-    border: 1px solid #3A3E4A !important; border-radius: 20px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    padding: 3px 0 !important; height: auto !important;
-    min-height: 0 !important; line-height: 1.6 !important; box-shadow: none !important;
-}}
-/* 선택된 filter — 초록 */
-{"".join([
-    f"div[data-testid='stButton']:has(button[key='f_{k}']) button {{ background: #00E676 !important; color: #000 !important; border-color: #00E676 !important; }}"
-    for k in (['all'] if chart_filter=='All' else ['kimp'] if chart_filter=='KIMP' else ['okx'] if chart_filter=='OKX' else ['bx'])
-])}
-/* 선택된 period — 빨강 */
-{"".join([
-    f"div[data-testid='stButton']:has(button[key='p_{k}']) button {{ background: #FF5370 !important; color: #fff !important; border-color: #FF5370 !important; }}"
-    for k in (['4h'] if period=='4H' else ['d'] if period=='D' else ['w'] if period=='W' else ['m'])
-])}
-/* 버튼 행 상단 여백 제거 */
-div[data-testid="stHorizontalBlock"] {{ margin-top: -48px !important; }}
-</style>
-""", unsafe_allow_html=True)
+with period_col:
+    st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
+    period = st.radio(
+        "", ["4H", "D", "W", "M"],
+        horizontal=True, label_visibility="collapsed",
+        index=1, key="period_radio"
+    )
 
 # ══════════════════════════════════════════════════
 # ── 차트
@@ -524,7 +381,7 @@ if not df.empty:
 # ── 포지션 현황
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
-st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
     show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
     if not show.empty:
@@ -562,7 +419,7 @@ else:
 # ── 손익 내역
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
-st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
 
 if not df.empty:
     daily = df.copy().set_index('시간').sort_index()
@@ -574,16 +431,16 @@ if not df.empty:
     daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
     daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
 
-    st.markdown('<span class="marker"></span>', unsafe_allow_html=True)
     pnl_filter = st.radio(
         "", ["전체", "KIMP", "OKX", "빙엑스"],
-        horizontal=True, label_visibility="collapsed", key="pnl_filter_radio"
+        horizontal=True, label_visibility="collapsed",
+        key="pnl_filter_radio"
     )
 
-    if pnl_filter == "KIMP":   pnl_col, cum_col = '일손익_김프', '김프차익'
-    elif pnl_filter == "OKX":  pnl_col, cum_col = '일손익_OKX',  'OKX통합'
-    elif pnl_filter == "빙엑스": pnl_col, cum_col = '일손익_BX', '빙엑스 현물DCA'
-    else:                       pnl_col, cum_col = '일손익_총',   '총자산'
+    if pnl_filter == "KIMP":     pnl_col, cum_col = '일손익_김프', '김프차익'
+    elif pnl_filter == "OKX":    pnl_col, cum_col = '일손익_OKX',  'OKX통합'
+    elif pnl_filter == "빙엑스": pnl_col, cum_col = '일손익_BX',   '빙엑스 현물DCA'
+    else:                         pnl_col, cum_col = '일손익_총',   '총자산'
 
     pnl_vals   = daily[pnl_col]
     wins       = (pnl_vals > 0).sum()
@@ -622,16 +479,16 @@ if not df.empty:
         c_cls = "pos" if c_val >= 0 else "neg"
         if date in transfer_rows:
             for tr in transfer_rows[date]:
-                is_deposit  = tr['유형'] == '입금'
-                badge_color = "#3B82F6" if is_deposit else "#FFAA00"
-                badge_bg    = "rgba(59,130,246,0.15)" if is_deposit else "rgba(255,170,0,0.15)"
-                badge_text  = f"입금 {fmt(tr['금액'])}" if is_deposit else f"출금 {fmt(tr['금액'])}"
-                memo        = tr.get('메모', '')
-                memo_badge  = f"<span style='color:#8B949E;font-size:11px;margin-left:4px;'>{memo}</span>" if memo else ""
+                is_dep = tr['유형'] == '입금'
+                bc = "#3B82F6" if is_dep else "#FFAA00"
+                bb = "rgba(59,130,246,0.15)" if is_dep else "rgba(255,170,0,0.15)"
+                bt = f"입금 {fmt(tr['금액'])}" if is_dep else f"출금 {fmt(tr['금액'])}"
+                memo = tr.get('메모', '')
+                mb = f"<span style='color:#8B949E;font-size:11px;margin-left:4px;'>{memo}</span>" if memo else ""
                 rows_html += (
                     f"<tr class='transfer-row'><td>{date.strftime('%Y-%m-%d')} "
-                    f"<span style='background:{badge_bg};color:{badge_color};font-size:11px;padding:1px 6px;border-radius:3px;'>{badge_text}</span>"
-                    f"{memo_badge}</td><td style='color:#2A2E39;'>—</td><td style='color:#2A2E39;'>—</td></tr>"
+                    f"<span style='background:{bb};color:{bc};font-size:11px;padding:1px 6px;border-radius:3px;'>{bt}</span>{mb}</td>"
+                    f"<td style='color:#2A2E39;'>—</td><td style='color:#2A2E39;'>—</td></tr>"
                 )
         rows_html += (
             f"<tr><td>{date.strftime('%Y-%m-%d')}</td>"
@@ -640,7 +497,8 @@ if not df.empty:
         )
 
     st.markdown(
-        "<div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;padding:0 4px;max-height:400px;overflow-y:auto;'>"
+        "<div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;"
+        "padding:0 4px;max-height:400px;overflow-y:auto;'>"
         "<table class='pnl-table'><thead><tr><th>날짜</th><th>일 손익</th><th>누적 손익</th></tr></thead>"
         "<tbody>" + rows_html + "</tbody></table></div>",
         unsafe_allow_html=True
@@ -648,7 +506,7 @@ if not df.empty:
 
 st.markdown("<div style='margin-top:40px;'></div>", unsafe_allow_html=True)
 
-# ── 5분마다 브라우저 자동 새로고침 ──
+# ── 5분마다 자동 새로고침 ──
 components.html(
     "<script>setTimeout(function(){ window.location.reload(); }, 300000);</script>",
     height=0
