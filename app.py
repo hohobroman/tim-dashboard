@@ -52,12 +52,9 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── 라디오 버튼 완전 재설계 ── */
-
-    /* 라벨(타이틀) 숨기기 */
+    /* ── 라디오 버튼 공통 스타일 ── */
     div[data-testid="stRadio"] > label { display: none !important; }
 
-    /* 래퍼를 flex row로 */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important;
         flex-direction: row !important;
@@ -65,9 +62,9 @@ st.markdown("""
         gap: 6px !important;
         background: transparent !important;
         padding: 0 !important;
+        align-items: center !important;
     }
 
-    /* 각 라디오 아이템 래퍼 */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label {
         display: inline-flex !important;
         align-items: center !important;
@@ -81,7 +78,6 @@ st.markdown("""
         min-width: fit-content !important;
     }
 
-    /* 동그라미 아이콘(첫번째 div) 완전 숨김 */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
         display: none !important;
         width: 0 !important;
@@ -90,7 +86,6 @@ st.markdown("""
         position: absolute !important;
     }
 
-    /* 텍스트 기본 색상 */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:last-child p {
         color: #8B949E !important;
         font-size: 13px !important;
@@ -99,7 +94,7 @@ st.markdown("""
         line-height: 1.4 !important;
     }
 
-    /* 선택된 버튼 - 기본 초록 */
+    /* 선택된 버튼 - 초록 (기본) */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
         background: #00E676 !important;
         border-color: #00E676 !important;
@@ -111,12 +106,17 @@ st.markdown("""
     /* ── 마커 처리 ── */
     div.element-container:has(.marker) { display: none !important; }
 
-    /* align-right: 우측 정렬 */
+    /* align-right */
     div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
         justify-content: flex-end !important;
     }
 
-    /* color-red: 선택 시 빨간색 */
+    /* align-center */
+    div.element-container:has(.align-center) + div.element-container div[role="radiogroup"] {
+        justify-content: center !important;
+    }
+
+    /* color-red */
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
         background: #FF5370 !important;
         border-color: #FF5370 !important;
@@ -182,26 +182,41 @@ def pct_html(pct):
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
-# ── 헤더 ──────────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 헤더
+# ══════════════════════════════════════════════════
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 h1, h2 = st.columns([3, 1])
 with h1:
-    st.markdown("<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>", unsafe_allow_html=True)
+    st.markdown(
+        "<h3 style='margin:0; color:#fff; font-weight:700; padding-top:10px;'>"
+        "🚀 나 대신 매매 (T.I.M) Live Dashboard</h3>",
+        unsafe_allow_html=True
+    )
 with h2:
+    # 마지막 업데이트 텍스트
     st.markdown(f"""
     <div style='display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding-top:8px;'>
         <div style='color:#8B949E; font-size:12px;'>마지막 업데이트</div>
         <div style='color:#E0E0E0; font-size:14px; font-weight:600;'>{l_time}</div>
     </div>
     """, unsafe_allow_html=True)
+    # KRW/USD 버튼 — 우측 정렬
     st.markdown('<span class="marker align-right"></span>', unsafe_allow_html=True)
-    currency = st.radio("", ["KRW", "USD"], horizontal=True, label_visibility="collapsed", key="currency_radio")
+    currency = st.radio(
+        "", ["KRW", "USD"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="currency_radio"
+    )
 
 is_usd = (currency == "USD")
 currency_sym = "$" if is_usd else "₩"
 fmt_hover = ",.2f" if is_usd else ",.0f"
 
-# ── 요약 카드 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 요약 카드
+# ══════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
@@ -268,21 +283,47 @@ if not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-# ── 차트 헤더 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 차트 헤더
+# 📌 핵심 변경: 제목 + All/KIMP/OKX/빙엑스를 같은 행 왼쪽에,
+#              4H/D/W/M을 같은 행 오른쪽 끝에 배치
+# ══════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
-chart_h1, chart_h2, chart_h3 = st.columns([2, 3, 2])
 
-with chart_h1:
-    st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px;'>📈 누적 손익 추이</h4>", unsafe_allow_html=True)
+chart_left, chart_right = st.columns([6, 2])
 
-with chart_h2:
-    chart_filter = st.radio("", ["All", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="chart_filter_radio")
+with chart_left:
+    title_col, filter_col = st.columns([2, 3])
+    with title_col:
+        st.markdown(
+            "<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:5px;'>"
+            "📈 누적 손익 추이</h4>",
+            unsafe_allow_html=True
+        )
+    with filter_col:
+        # All/KIMP/OKX/빙엑스 — 세로 중앙 정렬
+        st.markdown('<span class="marker align-center"></span>', unsafe_allow_html=True)
+        chart_filter = st.radio(
+            "", ["All", "KIMP", "OKX", "빙엑스"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="chart_filter_radio"
+        )
 
-with chart_h3:
+with chart_right:
+    # 4H/D/W/M — 우측 정렬 + 빨간색
     st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
-    period = st.radio("", ["4H", "D", "W", "M"], horizontal=True, label_visibility="collapsed", index=1, key="period_radio")
+    period = st.radio(
+        "", ["4H", "D", "W", "M"],
+        horizontal=True,
+        label_visibility="collapsed",
+        index=1,
+        key="period_radio"
+    )
 
-# ── 차트 ─────────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 차트
+# ══════════════════════════════════════════════════
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
@@ -291,18 +332,26 @@ if not df.empty:
     if period == "4H":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
         pdf = pdf.resample('4h').last().dropna()
-        xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39', range=[pdf.index.min(), pdf.index.max()], dtick=4*60*60*1000, tickangle=0)
+        xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39',
+                         range=[pdf.index.min(), pdf.index.max()],
+                         dtick=4*60*60*1000, tickangle=0)
     elif period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
-        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(days=14)], dtick=86400000)
+        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39',
+                         range=[pdf.index.min(), today + pd.Timedelta(days=14)],
+                         dtick=86400000)
     elif period == "W":
         pdf = pdf[pdf.index >= now - pd.Timedelta(days=90)]
         pdf = pdf.resample('W-SUN').last().dropna()
-        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.Timedelta(weeks=4)], dtick=7*86400000)
+        xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39',
+                         range=[pdf.index.min(), today + pd.Timedelta(weeks=4)],
+                         dtick=7*86400000)
     else:
         pdf = pdf.resample('ME').last().dropna()
-        xaxis_cfg = dict(tickformat="%Y-%m", gridcolor='#2A2E39', range=[pdf.index.min(), today + pd.DateOffset(months=3)], dtick='M1')
+        xaxis_cfg = dict(tickformat="%Y-%m", gridcolor='#2A2E39',
+                         range=[pdf.index.min(), today + pd.DateOffset(months=3)],
+                         dtick='M1')
 
     if is_usd:
         for c in ['총자산', '김프차익', 'OKX통합', '빙엑스 현물DCA']:
@@ -338,14 +387,19 @@ if not df.empty:
     fig.update_layout(
         plot_bgcolor='#171B26', paper_bgcolor='#171B26', font=dict(color='#8B949E'),
         margin=dict(l=10, r=10, t=10, b=10), height=350, hovermode="x unified",
-        hoverlabel=dict(bgcolor="#1E2433", bordercolor="#2A2E39", font=dict(color="#E0E0E0", size=13), namelength=-1),
+        hoverlabel=dict(bgcolor="#1E2433", bordercolor="#2A2E39",
+                        font=dict(color="#E0E0E0", size=13), namelength=-1),
         xaxis=xaxis_cfg,
-        yaxis=dict(gridcolor='#2A2E39', tickprefix=currency_sym, tickformat=",.2f" if is_usd else ",.0f"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#E0E0E0"))
+        yaxis=dict(gridcolor='#2A2E39', tickprefix=currency_sym,
+                   tickformat=",.2f" if is_usd else ",.0f"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="right", x=1, font=dict(color="#E0E0E0"))
     )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# ── 포지션 현황 ───────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 포지션 현황
+# ══════════════════════════════════════════════════
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
     show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
@@ -372,15 +426,21 @@ if not pos_df.empty:
             rows_html += "</tr>"
         header_html = "".join(f"<th>{h}</th>" for h in headers)
         st.markdown(f"""
-        <div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;padding:0 4px;overflow-x:auto;'>
-            <table class='pos-table'><thead><tr>{header_html}</tr></thead><tbody>{rows_html}</tbody></table>
+        <div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;
+                    padding:0 4px;overflow-x:auto;'>
+            <table class='pos-table'>
+                <thead><tr>{header_html}</tr></thead>
+                <tbody>{rows_html}</tbody>
+            </table>
         </div>""", unsafe_allow_html=True)
     else:
         st.info("현재 포지션이 없습니다.")
 else:
     st.info("현재 포지션이 없습니다.")
 
-# ── 손익 내역 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 손익 내역
+# ══════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📋 손익 내역</h4>", unsafe_allow_html=True)
 
@@ -394,7 +454,12 @@ if not df.empty:
     daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
     daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
 
-    pnl_filter = st.radio("", ["전체", "KIMP", "OKX", "빙엑스"], horizontal=True, label_visibility="collapsed", key="pnl_filter_radio")
+    pnl_filter = st.radio(
+        "", ["전체", "KIMP", "OKX", "빙엑스"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="pnl_filter_radio"
+    )
 
     if pnl_filter == "KIMP":
         pnl_col, cum_col = '일손익_김프', '김프차익'
@@ -414,10 +479,31 @@ if not df.empty:
     max_loss   = pnl_vals.min()
 
     sc1, sc2, sc3, sc4 = st.columns(4)
-    with sc1: st.markdown(f"<div class='stat-card'><div class='stat-label'>총 손익</div><div class='stat-value' style='color:{'#00E676' if total_pnl>=0 else '#FF5370'}'>{fmt_signed(total_pnl)}</div></div>", unsafe_allow_html=True)
-    with sc2: st.markdown(f"<div class='stat-card'><div class='stat-label'>승률</div><div class='stat-value'>{win_rate:.1f}%</div></div>", unsafe_allow_html=True)
-    with sc3: st.markdown(f"<div class='stat-card'><div class='stat-label'>최대 수익</div><div class='stat-value' style='color:#00E676'>{fmt_signed(max_profit)}</div></div>", unsafe_allow_html=True)
-    with sc4: st.markdown(f"<div class='stat-card'><div class='stat-label'>최대 손실</div><div class='stat-value' style='color:#FF5370'>{fmt_signed(max_loss)}</div></div>", unsafe_allow_html=True)
+    with sc1:
+        st.markdown(
+            f"<div class='stat-card'><div class='stat-label'>총 손익</div>"
+            f"<div class='stat-value' style='color:{'#00E676' if total_pnl>=0 else '#FF5370'}'>"
+            f"{fmt_signed(total_pnl)}</div></div>",
+            unsafe_allow_html=True
+        )
+    with sc2:
+        st.markdown(
+            f"<div class='stat-card'><div class='stat-label'>승률</div>"
+            f"<div class='stat-value'>{win_rate:.1f}%</div></div>",
+            unsafe_allow_html=True
+        )
+    with sc3:
+        st.markdown(
+            f"<div class='stat-card'><div class='stat-label'>최대 수익</div>"
+            f"<div class='stat-value' style='color:#00E676'>{fmt_signed(max_profit)}</div></div>",
+            unsafe_allow_html=True
+        )
+    with sc4:
+        st.markdown(
+            f"<div class='stat-card'><div class='stat-label'>최대 손실</div>"
+            f"<div class='stat-value' style='color:#FF5370'>{fmt_signed(max_loss)}</div></div>",
+            unsafe_allow_html=True
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -447,7 +533,8 @@ if not df.empty:
                 rows_html += (
                     f"<tr class='transfer-row'>"
                     f"<td>{date.strftime('%Y-%m-%d')} "
-                    f"<span style='background:{badge_bg};color:{badge_color};font-size:11px;padding:1px 6px;border-radius:3px;'>{badge_text}</span>"
+                    f"<span style='background:{badge_bg};color:{badge_color};"
+                    f"font-size:11px;padding:1px 6px;border-radius:3px;'>{badge_text}</span>"
                     f"{memo_badge}</td>"
                     f"<td style='color:#2A2E39;'>—</td>"
                     f"<td style='color:#2A2E39;'>—</td>"
@@ -463,7 +550,8 @@ if not df.empty:
         )
 
     table_html = (
-        "<div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;padding:0 4px;max-height:400px;overflow-y:auto;'>"
+        "<div style='background:#171B26;border:1px solid #2A2E39;border-radius:8px;"
+        "padding:0 4px;max-height:400px;overflow-y:auto;'>"
         "<table class='pnl-table'>"
         "<thead><tr><th>날짜</th><th>일 손익</th><th>누적 손익</th></tr></thead>"
         "<tbody>" + rows_html + "</tbody>"
