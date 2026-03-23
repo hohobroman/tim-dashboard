@@ -87,11 +87,19 @@ st.markdown("""
         color: #000 !important;
     }
 
-    /* ── 마커 처리 ── */
+    /* ── 마커 처리 (이 부분 CSS가 강화되었습니다) ── */
     div.element-container:has(.marker) { display: none !important; }
+    
+    /* 부모 컨테이너가 꽉 차도록 하여 우측 정렬 강제 */
+    div.element-container:has(.align-right) + div.element-container div[data-testid="stRadio"] {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+    }
     div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
         justify-content: flex-end !important;
     }
+    
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
         background: #FF5370 !important; border-color: #FF5370 !important;
     }
