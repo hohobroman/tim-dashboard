@@ -13,6 +13,7 @@ st.markdown("""
     .stApp { background-color: #0F1219; color: #E0E0E0; font-family: 'Pretendard', sans-serif; }
     header, footer, #MainMenu { visibility: hidden; }
     .block-container { padding-top: 1.5rem; max-width: 1400px; }
+
     .cards-container { display: flex; gap: 12px; margin-top: 16px; margin-bottom: 16px; }
     @media (max-width: 768px) {
         .cards-container { flex-wrap: wrap !important; }
@@ -25,11 +26,13 @@ st.markdown("""
     .metric-pct-neg { font-size: 14px; font-weight: 600; color: #FF5370; margin-bottom: 4px; }
     .metric-delta-pos { display: inline-block; font-size: 13px; font-weight: 600; color: #00E676; background-color: rgba(0,230,118,0.12); padding: 2px 10px; border-radius: 4px; }
     .metric-delta-neg { display: inline-block; font-size: 13px; font-weight: 600; color: #FF5370; background-color: rgba(255,83,112,0.12); padding: 2px 10px; border-radius: 4px; }
+
     .pos-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .pos-table th { color: #8B949E; font-weight: 500; padding: 10px 12px; border-bottom: 1px solid #2A2E39; text-align: left; }
     .pos-table td { padding: 10px 12px; border-bottom: 1px solid #1E2330; color: #E0E0E0; text-align: left; }
     .pos-table tr:last-child td { border-bottom: none; }
     .pos-table tr:hover td { background-color: #1E2330; }
+
     .pnl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .pnl-table th { color: #8B949E; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #2A2E39; text-align: right; }
     .pnl-table th:first-child { text-align: left; }
@@ -40,9 +43,11 @@ st.markdown("""
     .pnl-table tr.transfer-row:hover td { background-color: #141a2a; }
     .pos { color: #00E676 !important; }
     .neg { color: #FF5370 !important; }
+
     .stat-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 12px 16px; }
     .stat-label { font-size: 12px; color: #8B949E; margin-bottom: 4px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #FFFFFF; }
+
     .alloc-card { background-color: #171B26; border: 1px solid #2A2E39; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; }
     .alloc-label { font-size: 13px; color: #8B949E; margin-bottom: 10px; font-weight: 500; }
     .alloc-row { display: flex; align-items: center; margin-bottom: 8px; gap: 10px; }
@@ -52,7 +57,11 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── 라디오 버튼 공통 스타일 ── */
+    /* ── 섹션 구분선 ── */
+    .section-gap { margin-top: 28px; margin-bottom: 12px; }
+    .section-title { color: #E0E0E0; font-weight: 600; font-size: 18px; margin: 0; }
+
+    /* ── Pill 버튼 (라디오) 공통 ── */
     div[data-testid="stRadio"] > label { display: none !important; }
 
     div[data-testid="stRadio"] > div[role="radiogroup"] {
@@ -64,7 +73,6 @@ st.markdown("""
         padding: 0 !important;
         align-items: center !important;
     }
-
     div[data-testid="stRadio"] > div[role="radiogroup"] > label {
         display: inline-flex !important;
         align-items: center !important;
@@ -77,7 +85,6 @@ st.markdown("""
         cursor: pointer !important;
         min-width: fit-content !important;
     }
-
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
         display: none !important;
         width: 0 !important;
@@ -85,7 +92,6 @@ st.markdown("""
         overflow: hidden !important;
         position: absolute !important;
     }
-
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:last-child p {
         color: #8B949E !important;
         font-size: 13px !important;
@@ -93,8 +99,7 @@ st.markdown("""
         margin: 0 !important;
         line-height: 1.4 !important;
     }
-
-    /* 선택된 버튼 - 초록 (기본) */
+    /* 선택된 버튼 - 초록 */
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
         background: #00E676 !important;
         border-color: #00E676 !important;
@@ -110,12 +115,6 @@ st.markdown("""
     div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
         justify-content: flex-end !important;
     }
-
-    /* align-center */
-    div.element-container:has(.align-center) + div.element-container div[role="radiogroup"] {
-        justify-content: center !important;
-    }
-
     /* color-red */
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
         background: #FF5370 !important;
@@ -125,15 +124,13 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ── 헤더 우측 블록: 버튼이 아래 붙도록 gap 제거 ── */
-    div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
-
-    /* Streamlit 컬럼 내부 상단 여백 제거 */
-    div[data-testid="column"] > div { gap: 0 !important; }
-    div[data-testid="column"] > div > div { margin-top: 0 !important; padding-top: 0 !important; }
-
-    /* 헤더 우측 컬럼 전용: 모든 element-container 간격 제거 */
-    .header-right .element-container { margin: 0 !important; padding: 0 !important; }
+    /* ── 컬럼 내부 상하 여백 최소화 (버튼 세로 정렬용) ── */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 0 !important;
+    }
+    div[data-testid="column"] > div > div > div[data-testid="stVerticalBlock"] {
+        gap: 0.3rem !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -180,11 +177,20 @@ df, pos_df, transfer_df = load_data()
 if 'currency' not in st.session_state:
     st.session_state['currency'] = 'KRW'
 
+# URL 파라미터로 currency 상태 처리
+params = st.query_params
+if 'currency' in params:
+    st.session_state['currency'] = params['currency']
+
+is_usd = st.session_state['currency'] == 'USD'
+currency_sym = "$" if is_usd else "₩"
+fmt_hover = ",.2f" if is_usd else ",.0f"
+
 def fmt(val):
-    return f"${val/usdt_rate:,.2f}" if st.session_state['currency'] == 'USD' else f"₩{int(val):,}"
+    return f"${val/usdt_rate:,.2f}" if is_usd else f"₩{int(val):,}"
 def fmt_signed(val):
     sign = "+" if val >= 0 else ""
-    return f"{sign}${val/usdt_rate:,.2f}" if st.session_state['currency'] == 'USD' else f"{sign}₩{int(val):,}"
+    return f"{sign}${val/usdt_rate:,.2f}" if is_usd else f"{sign}₩{int(val):,}"
 def delta_html(val):
     sym = "▲" if val >= 0 else "▼"
     css = "metric-delta-pos" if val >= 0 else "metric-delta-neg"
@@ -195,13 +201,13 @@ def pct_html(pct):
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
 # ══════════════════════════════════════════════════
-# ── 헤더: 제목(왼쪽) | 업데이트+KRW/USD(오른쪽) 한 블록
+# ── 헤더
 # ══════════════════════════════════════════════════
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 
-is_krw = st.session_state['currency'] == 'KRW'
+is_krw = not is_usd
 krw_style = "background:#00E676;color:#000;border:1px solid #00E676;" if is_krw else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
-usd_style = "background:#00E676;color:#000;border:1px solid #00E676;" if not is_krw else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
+usd_style = "background:#00E676;color:#000;border:1px solid #00E676;" if is_usd else "background:transparent;color:#8B949E;border:1px solid #3A3E4A;"
 
 h1, h2 = st.columns([3, 1])
 with h1:
@@ -211,7 +217,6 @@ with h1:
         unsafe_allow_html=True
     )
 with h2:
-    # 마지막 업데이트 + KRW/USD 버튼을 하나의 HTML 블록으로 통합
     st.markdown(f"""
     <div style='display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding-top:8px;'>
         <div style='display:flex; flex-direction:column; align-items:flex-end; gap:2px;'>
@@ -221,31 +226,20 @@ with h2:
         <div style='display:flex; gap:6px;'>
             <a href='?currency=KRW' style='text-decoration:none;'>
                 <span style='display:inline-flex;align-items:center;justify-content:center;
-                    {krw_style}
-                    border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;'>KRW</span>
+                    {krw_style}border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;'>KRW</span>
             </a>
             <a href='?currency=USD' style='text-decoration:none;'>
                 <span style='display:inline-flex;align-items:center;justify-content:center;
-                    {usd_style}
-                    border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;'>USD</span>
+                    {usd_style}border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;'>USD</span>
             </a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# URL 파라미터로 currency 상태 처리
-params = st.query_params
-if 'currency' in params:
-    st.session_state['currency'] = params['currency']
-
-is_usd = st.session_state['currency'] == 'USD'
-currency_sym = "$" if is_usd else "₩"
-fmt_hover = ",.2f" if is_usd else ",.0f"
-
 # ══════════════════════════════════════════════════
 # ── 요약 카드
 # ══════════════════════════════════════════════════
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
@@ -312,30 +306,33 @@ if not df.empty:
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
-# ── 차트 헤더: 제목 + All/KIMP/OKX/빙엑스(왼쪽) | 4H/D/W/M(오른쪽)
+# ── 차트 헤더: 전체를 HTML로 한 줄에 그리고,
+#   All/KIMP/OKX/빙엑스는 st.radio로 중앙,
+#   4H/D/W/M은 st.radio로 오른쪽 끝
 # ══════════════════════════════════════════════════
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
-chart_left, chart_right = st.columns([6, 2])
+# 제목 + 필터버튼(왼쪽) | 기간버튼(오른쪽) 을 3컬럼으로
+title_col, filter_col, period_col = st.columns([3, 4, 2])
 
-with chart_left:
-    title_col, filter_col = st.columns([2, 3])
-    with title_col:
-        st.markdown(
-            "<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:5px;'>"
-            "📈 누적 손익 추이</h4>",
-            unsafe_allow_html=True
-        )
-    with filter_col:
-        st.markdown('<span class="marker align-center"></span>', unsafe_allow_html=True)
-        chart_filter = st.radio(
-            "", ["All", "KIMP", "OKX", "빙엑스"],
-            horizontal=True,
-            label_visibility="collapsed",
-            key="chart_filter_radio"
-        )
+with title_col:
+    st.markdown(
+        "<h4 style='color:#E0E0E0; font-weight:600; margin:0; padding-top:6px; white-space:nowrap;'>"
+        "📈 누적 손익 추이</h4>",
+        unsafe_allow_html=True
+    )
 
-with chart_right:
+with filter_col:
+    # All/KIMP/OKX/빙엑스 — 좌측 정렬 (기본값)
+    chart_filter = st.radio(
+        "", ["All", "KIMP", "OKX", "빙엑스"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="chart_filter_radio"
+    )
+
+with period_col:
+    # 4H/D/W/M — 우측 정렬 + 빨간색
     st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
     period = st.radio(
         "", ["4H", "D", "W", "M"],
@@ -424,7 +421,8 @@ if not df.empty:
 # ══════════════════════════════════════════════════
 # ── 포지션 현황
 # ══════════════════════════════════════════════════
-st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
+st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
     show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
     if not show.empty:
@@ -465,8 +463,8 @@ else:
 # ══════════════════════════════════════════════════
 # ── 손익 내역
 # ══════════════════════════════════════════════════
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown("<h4 style='color:#E0E0E0; font-weight:600;'>📋 손익 내역</h4>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
+st.markdown("<h4 style='color:#E0E0E0; font-weight:600; margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
 
 if not df.empty:
     daily = df.copy().set_index('시간').sort_index()
@@ -502,6 +500,7 @@ if not df.empty:
     max_profit = pnl_vals.max()
     max_loss   = pnl_vals.min()
 
+    st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
     sc1, sc2, sc3, sc4 = st.columns(4)
     with sc1:
         st.markdown(
@@ -529,7 +528,7 @@ if not df.empty:
             unsafe_allow_html=True
         )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
 
     transfer_rows = {}
     if not transfer_df.empty:
@@ -582,6 +581,8 @@ if not df.empty:
         "</table></div>"
     )
     st.markdown(table_html, unsafe_allow_html=True)
+
+st.markdown("<div style='margin-top:40px;'></div>", unsafe_allow_html=True)
 
 # ── 5분마다 브라우저 자동 새로고침 ─────────────────
 components.html(
