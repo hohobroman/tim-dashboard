@@ -490,6 +490,12 @@ st.markdown("<div style='margin-top:40px;'></div>", unsafe_allow_html=True)
 
 # ── 5분마다 자동 새로고침 ──
 components.html(
-    "<script>setTimeout(function(){ window.location.reload(); }, 300000);</script>",
+    """
+    <script>
+    setTimeout(function(){
+        window.parent.location.reload();
+    }, 300000);
+    </script>
+    """,
     height=0
 )
