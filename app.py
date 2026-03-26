@@ -4,7 +4,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
-import time
 import requests
 
 st.set_page_config(page_title="T.I.M Portfolio", layout="wide", initial_sidebar_state="collapsed")
@@ -58,7 +57,7 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── Pill 라디오 버튼 ── */
+    /* ── Pill 라디오 버튼 (4H/D/W/M, KRW/USD) ── */
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important;
@@ -88,11 +87,21 @@ st.markdown("""
         color: #000 !important;
     }
 
-    /* ── 마커 처리 ── */
+    /* ── 마커 처리 (완벽한 우측 정렬) ── */
     div.element-container:has(.marker) { display: none !important; }
+    
+    div.element-container:has(.align-right) + div.element-container {
+        display: flex !important;
+        width: 100% !important;
+    }
+    div.element-container:has(.align-right) + div.element-container > div {
+        margin-left: auto !important; 
+        width: auto !important;
+    }
     div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
         justify-content: flex-end !important;
     }
+    
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
         background: #FF5370 !important; border-color: #FF5370 !important;
     }
@@ -141,6 +150,7 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
+# ── session_state 초기화 ──
 if 'currency' not in st.session_state:
     st.session_state['currency'] = 'KRW'
 
@@ -162,7 +172,9 @@ def pct_html(pct):
     css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
     return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
-# ── 헤더 ──────────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 헤더
+# ══════════════════════════════════════════════════
 l_time = df.iloc[-1]['시간'].strftime('%Y-%m-%d %H:%M:%S') if not df.empty else "..."
 
 h1, h2 = st.columns([3, 1])
@@ -181,40 +193,23 @@ with h2:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    btn_krw, btn_usd = st.columns(2)
-    with btn_krw:
-        if st.button("KRW", key="btn_krw",
-                     type="primary" if not is_usd else "secondary"):
-            st.session_state['currency'] = 'KRW'
-            st.rerun()
-    with btn_usd:
-        if st.button("USD", key="btn_usd",
-                     type="primary" if is_usd else "secondary"):
-            st.session_state['currency'] = 'USD'
-            st.rerun()
+    
+    st.markdown('<span class="marker align-right"></span>', unsafe_allow_html=True)
+    curr_choice = st.radio(
+        "", ["KRW", "USD"],
+        horizontal=True, 
+        label_visibility="collapsed",
+        index=1 if is_usd else 0,
+        key="currency_radio"
+    )
+    
+    if curr_choice != st.session_state['currency']:
+        st.session_state['currency'] = curr_choice
+        st.rerun()
 
-st.markdown("""
-<style>
-div[data-testid="stButton"] button[kind="primary"] {
-    background:#00E676 !important; color:#000 !important;
-    border:1px solid #00E676 !important; border-radius:20px !important;
-    font-size:13px !important; font-weight:600 !important;
-    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
-}
-div[data-testid="stButton"] button[kind="secondary"] {
-    background:transparent !important; color:#8B949E !important;
-    border:1px solid #3A3E4A !important; border-radius:20px !important;
-    font-size:13px !important; font-weight:600 !important;
-    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
-}
-div[data-testid="stButton"] button[kind="secondary"]:hover {
-    background:rgba(255,255,255,0.05) !important;
-    color:#E0E0E0 !important; border-color:#8B949E !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ── 요약 카드 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 요약 카드
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
@@ -281,23 +276,18 @@ if not df.empty:
     </div>
     """, unsafe_allow_html=True)
 
-# ── 차트 헤더 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 차트 헤더: 제목(왼쪽) | 기간(오른쪽) (필터 메뉴 제거)
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
-title_col, filter_col, spacer_col, period_col = st.columns([2, 5, 1, 2])
+title_col, spacer_col, period_col = st.columns([3, 6, 3])
 
 with title_col:
     st.markdown(
         "<h4 style='color:#E0E0E0;font-weight:600;margin:0;padding-top:5px;white-space:nowrap;'>"
         "📈 누적 손익 추이</h4>",
         unsafe_allow_html=True
-    )
-
-with filter_col:
-    chart_filter = st.radio(
-        "", ["All", "KIMP", "OKX", "빙엑스"],
-        horizontal=True, label_visibility="collapsed",
-        key="chart_filter_radio"
     )
 
 with period_col:
@@ -308,7 +298,9 @@ with period_col:
         index=1, key="period_radio"
     )
 
-# ── 차트 ─────────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 차트
+# ══════════════════════════════════════════════════
 if not df.empty:
     pdf = df.copy().set_index('시간').sort_index()
     now = pdf.index.max()
@@ -343,31 +335,19 @@ if not df.empty:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
-    if chart_filter == "All":
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
-            line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
-            hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
-            line=dict(color='#00E676', width=2),
-            hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
-            line=dict(color='#3B82F6', width=2),
-            hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
-            line=dict(color='#F59E0B', width=2),
-            hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif chart_filter == "KIMP":
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
-            line=dict(color='#00E676', width=3), fill='tozeroy', fillcolor='rgba(0,230,118,0.1)',
-            hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    elif chart_filter == "OKX":
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
-            line=dict(color='#3B82F6', width=3), fill='tozeroy', fillcolor='rgba(59,130,246,0.1)',
-            hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    else:
-        fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
-            line=dict(color='#F59E0B', width=3), fill='tozeroy', fillcolor='rgba(245,158,11,0.1)',
-            hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    # 전체(All) 데이터 고정 출력
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
+        line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
+        hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
+        line=dict(color='#00E676', width=2),
+        hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
+        line=dict(color='#3B82F6', width=2),
+        hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
+        line=dict(color='#F59E0B', width=2),
+        hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
 
     fig.update_layout(
         plot_bgcolor='#171B26', paper_bgcolor='#171B26', font=dict(color='#8B949E'),
@@ -380,9 +360,11 @@ if not df.empty:
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1, font=dict(color="#E0E0E0"))
     )
-    st.plotly_chart(fig, config={'displayModeBar': False})
+    st.plotly_chart(fig,  config={'displayModeBar': False})
 
-# ── 포지션 현황 ───────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 포지션 현황
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
@@ -418,7 +400,9 @@ if not pos_df.empty:
 else:
     st.info("현재 포지션이 없습니다.")
 
-# ── 손익 내역 ─────────────────────────────────────
+# ══════════════════════════════════════════════════
+# ── 손익 내역 (필터 메뉴 제거, 전체 데이터만 출력)
+# ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
 
@@ -428,20 +412,9 @@ if not df.empty:
     daily.index = pd.to_datetime(daily.index)
 
     daily['일손익_총']   = daily['총자산'].diff().fillna(0)
-    daily['일손익_김프'] = daily['김프차익'].diff().fillna(0)
-    daily['일손익_OKX']  = daily['OKX통합'].diff().fillna(0)
-    daily['일손익_BX']   = daily['빙엑스 현물DCA'].diff().fillna(0)
-
-    pnl_filter = st.radio(
-        "", ["전체", "KIMP", "OKX", "빙엑스"],
-        horizontal=True, label_visibility="collapsed",
-        key="pnl_filter_radio"
-    )
-
-    if pnl_filter == "KIMP":     pnl_col, cum_col = '일손익_김프', '김프차익'
-    elif pnl_filter == "OKX":    pnl_col, cum_col = '일손익_OKX',  'OKX통합'
-    elif pnl_filter == "빙엑스": pnl_col, cum_col = '일손익_BX',   '빙엑스 현물DCA'
-    else:                         pnl_col, cum_col = '일손익_총',   '총자산'
+    
+    # 전체(All) 컬럼 고정
+    pnl_col, cum_col = '일손익_총', '총자산'
 
     pnl_vals   = daily[pnl_col]
     wins       = (pnl_vals > 0).sum()
@@ -508,5 +481,7 @@ if not df.empty:
 st.markdown("<div style='margin-top:40px;'></div>", unsafe_allow_html=True)
 
 # ── 5분마다 자동 새로고침 ──
-time.sleep(300)
-st.rerun()
+components.html(
+    "<script>setTimeout(function(){ window.location.reload(); }, 300000);</script>",
+    height=0
+)
