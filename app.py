@@ -3,6 +3,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import plotly.graph_objects as go
+import streamlit.components.v1 as components
 import time
 import requests
 
@@ -180,13 +181,13 @@ with h2:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    btn_cols = st.columns([1, 1])
-    with btn_cols[0]:
+    btn_krw, btn_usd = st.columns(2)
+    with btn_krw:
         if st.button("KRW", key="btn_krw",
                      type="primary" if not is_usd else "secondary"):
             st.session_state['currency'] = 'KRW'
             st.rerun()
-    with btn_cols[1]:
+    with btn_usd:
         if st.button("USD", key="btn_usd",
                      type="primary" if is_usd else "secondary"):
             st.session_state['currency'] = 'USD'
@@ -195,24 +196,21 @@ with h2:
 st.markdown("""
 <style>
 div[data-testid="stButton"] button[kind="primary"] {
-    background: #00E676 !important; color: #000 !important;
-    border: 1px solid #00E676 !important; border-radius: 20px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    padding: 3px 12px !important; width: auto !important;
-    min-width: 0 !important; box-shadow: none !important;
+    background:#00E676 !important; color:#000 !important;
+    border:1px solid #00E676 !important; border-radius:20px !important;
+    font-size:13px !important; font-weight:600 !important;
+    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
 }
 div[data-testid="stButton"] button[kind="secondary"] {
-    background: transparent !important; color: #8B949E !important;
-    border: 1px solid #2A2E39 !important; border-radius: 20px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    padding: 3px 12px !important; width: auto !important;
-    min-width: 0 !important; box-shadow: none !important;
+    background:transparent !important; color:#8B949E !important;
+    border:1px solid #3A3E4A !important; border-radius:20px !important;
+    font-size:13px !important; font-weight:600 !important;
+    padding:4px 14px !important; width:auto !important; min-width:0 !important; box-shadow:none !important;
 }
 div[data-testid="stButton"] button[kind="secondary"]:hover {
-    background: rgba(255,255,255,0.05) !important;
-    color: #E0E0E0 !important; border-color: #8B949E !important;
+    background:rgba(255,255,255,0.05) !important;
+    color:#E0E0E0 !important; border-color:#8B949E !important;
 }
-div[data-testid="stHorizontalBlock"] { gap: 6px !important; }
 </style>
 """, unsafe_allow_html=True)
 
