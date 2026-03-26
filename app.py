@@ -74,7 +74,7 @@ st.markdown("""
         border: 1px solid #3A3E4A !important; border-radius: 20px !important;
         padding: 0 14px !important; margin: 0 !important;
         cursor: pointer !important; min-width: fit-content !important;
-        height: 28px !important; /* 모든 버튼 높이 완벽 통일 */
+        height: 28px !important; 
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
         display: none !important; width: 0 !important; height: 0 !important;
@@ -134,7 +134,7 @@ def load_data():
         df_m = pd.DataFrame(m_data[1:], columns=m_data[0])
         df_m['시간'] = pd.to_datetime(df_m['시간'])
         
-        # 빙엑스 현물DCA -> 빙엑스 선물로 수정 완료
+        # 빙엑스 현물DCA -> 빙엑스 선물로 수정
         for c in ['김프차익', 'OKX통합', '빙엑스 선물', '총자산']:
             df_m[c] = pd.to_numeric(df_m[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
@@ -342,7 +342,6 @@ if not df.empty:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
-    # 전체(All) 데이터 고정 출력
     fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
         line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
         hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
@@ -375,8 +374,8 @@ if not df.empty:
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    # 필터링 조건도 BingX(선물) 로 완벽하게 일치시킴
-    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)', 'OKX(현물)', 'OKX(선물)'])].copy()
+    # 💡 여기서 OKX(현물), OKX(선물)를 제외했습니다.
+    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)'])].copy()
     if not show.empty:
         if '방향' in show.columns:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
@@ -421,7 +420,6 @@ if not df.empty:
 
     daily['일손익_총']   = daily['총자산'].diff().fillna(0)
     
-    # 전체(All) 컬럼 고정
     pnl_col, cum_col = '일손익_총', '총자산'
 
     pnl_vals   = daily[pnl_col]
@@ -488,7 +486,7 @@ if not df.empty:
 
 st.markdown("<div style='margin-top:40px;'></div>", unsafe_allow_html=True)
 
-# ── 5분마다 자동 새로고침 ──
+# ── 5분마다 자동 새로고침 (부모 창 새로고침으로 수정) ──
 components.html(
     """
     <script>
