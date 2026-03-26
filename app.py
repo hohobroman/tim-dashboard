@@ -57,7 +57,10 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── Pill 라디오 버튼 (4H/D/W/M, KRW/USD) ── */
+    /* ── Pill 라디오 버튼 (4H/D/W/M, KRW/USD 통일) ── */
+    div[data-testid="stRadio"] { 
+        width: fit-content !important; 
+    }
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important;
@@ -69,8 +72,9 @@ st.markdown("""
         display: inline-flex !important; align-items: center !important;
         justify-content: center !important; background: transparent !important;
         border: 1px solid #3A3E4A !important; border-radius: 20px !important;
-        padding: 4px 14px !important; margin: 0 !important;
+        padding: 0 14px !important; margin: 0 !important;
         cursor: pointer !important; min-width: fit-content !important;
+        height: 28px !important; /* 모든 버튼 높이 완벽 통일 */
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
         display: none !important; width: 0 !important; height: 0 !important;
@@ -87,19 +91,19 @@ st.markdown("""
         color: #000 !important;
     }
 
-    /* ── 마커 처리 (완벽한 우측 정렬) ── */
+    /* ── 마커 처리 (절대 우측 정렬 강제) ── */
     div.element-container:has(.marker) { display: none !important; }
     
     div.element-container:has(.align-right) + div.element-container {
         display: flex !important;
+        justify-content: flex-end !important;
         width: 100% !important;
     }
     div.element-container:has(.align-right) + div.element-container > div {
         margin-left: auto !important; 
-        width: auto !important;
-    }
-    div.element-container:has(.align-right) + div.element-container div[role="radiogroup"] {
-        justify-content: flex-end !important;
+        margin-right: 0 !important;
+        float: right !important;
+        width: fit-content !important;
     }
     
     div.element-container:has(.color-red) + div.element-container div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
