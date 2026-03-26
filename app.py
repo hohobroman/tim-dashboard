@@ -133,7 +133,8 @@ def load_data():
         m_data = db.get_worksheet(0).get_all_values()
         df_m = pd.DataFrame(m_data[1:], columns=m_data[0])
         df_m['시간'] = pd.to_datetime(df_m['시간'])
-        # 빙엑스 현물DCA -> 빙엑스 선물 로 수정됨
+        
+        # 빙엑스 현물DCA -> 빙엑스 선물로 수정 완료
         for c in ['김프차익', 'OKX통합', '빙엑스 선물', '총자산']:
             df_m[c] = pd.to_numeric(df_m[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
@@ -149,7 +150,8 @@ def load_data():
             df_t = pd.DataFrame(columns=['날짜', '유형', '금액', '메모'])
 
         return df_m, df_p, df_t
-    except:
+    except Exception as e:
+        print(f"Data Load Error: {e}")
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(columns=['날짜', '유형', '금액', '메모'])
 
 usdt_rate = get_exchange_rate()
@@ -282,7 +284,7 @@ if not df.empty:
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
-# ── 차트 헤더: 제목(왼쪽) | 기간(오른쪽)
+# ── 차트 헤더
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
@@ -373,8 +375,8 @@ if not df.empty:
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    # 빙엑스 현물 -> 선물로 필터링 변경
-    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)'])].copy()
+    # 필터링 조건도 BingX(선물) 로 완벽하게 일치시킴
+    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)', 'OKX(현물)', 'OKX(선물)'])].copy()
     if not show.empty:
         if '방향' in show.columns:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
@@ -407,7 +409,7 @@ else:
     st.info("현재 포지션이 없습니다.")
 
 # ══════════════════════════════════════════════════
-# ── 손익 내역 (전체 데이터만 출력)
+# ── 손익 내역
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
