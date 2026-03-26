@@ -133,7 +133,8 @@ def load_data():
         m_data = db.get_worksheet(0).get_all_values()
         df_m = pd.DataFrame(m_data[1:], columns=m_data[0])
         df_m['시간'] = pd.to_datetime(df_m['시간'])
-        for c in ['김프차익', 'OKX통합', '빙엑스 현물DCA', '총자산']:
+        # 빙엑스 현물DCA -> 빙엑스 선물 로 수정됨
+        for c in ['김프차익', 'OKX통합', '빙엑스 선물', '총자산']:
             df_m[c] = pd.to_numeric(df_m[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
         p_data = db.get_worksheet(1).get_all_values()
@@ -226,7 +227,7 @@ if not df.empty:
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
     kimp_ratio = curr['김프차익'] / total_val * 100
     okx_ratio  = curr['OKX통합']  / total_val * 100
-    bx_ratio   = curr['빙엑스 현물DCA'] / total_val * 100
+    bx_ratio   = curr['빙엑스 선물'] / total_val * 100
 
     st.markdown(f"""
     <div class='cards-container'>
@@ -249,10 +250,10 @@ if not df.empty:
             {delta_html(curr['OKX통합']-prev['OKX통합'])}
         </div>
         <div class="metric-card" style='flex:1;'>
-            <div class="metric-label">빙엑스 현물DCA</div>
-            <div class="metric-value">{fmt(curr['빙엑스 현물DCA'])}</div>
-            {pct_html(pct_change('빙엑스 현물DCA'))}
-            {delta_html(curr['빙엑스 현물DCA']-prev['빙엑스 현물DCA'])}
+            <div class="metric-label">빙엑스 선물</div>
+            <div class="metric-value">{fmt(curr['빙엑스 선물'])}</div>
+            {pct_html(pct_change('빙엑스 선물'))}
+            {delta_html(curr['빙엑스 선물']-prev['빙엑스 선물'])}
         </div>
         <div class="alloc-card" style='flex:1;'>
             <div class="alloc-label">자산 비중</div>
@@ -281,7 +282,7 @@ if not df.empty:
     """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
-# ── 차트 헤더: 제목(왼쪽) | 기간(오른쪽) (필터 메뉴 제거)
+# ── 차트 헤더: 제목(왼쪽) | 기간(오른쪽)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 
@@ -335,7 +336,7 @@ if not df.empty:
                          dtick='M1')
 
     if is_usd:
-        for c in ['총자산', '김프차익', 'OKX통합', '빙엑스 현물DCA']:
+        for c in ['총자산', '김프차익', 'OKX통합', '빙엑스 선물']:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
@@ -349,7 +350,7 @@ if not df.empty:
     fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
         line=dict(color='#3B82F6', width=2),
         hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 현물DCA'], mode='lines', name='BingX',
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 선물'], mode='lines', name='BingX',
         line=dict(color='#F59E0B', width=2),
         hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
 
@@ -372,7 +373,8 @@ if not df.empty:
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(현물)'])].copy()
+    # 빙엑스 현물 -> 선물로 필터링 변경
+    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)'])].copy()
     if not show.empty:
         if '방향' in show.columns:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
@@ -405,7 +407,7 @@ else:
     st.info("현재 포지션이 없습니다.")
 
 # ══════════════════════════════════════════════════
-# ── 손익 내역 (필터 메뉴 제거, 전체 데이터만 출력)
+# ── 손익 내역 (전체 데이터만 출력)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
