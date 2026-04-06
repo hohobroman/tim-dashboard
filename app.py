@@ -57,7 +57,7 @@ st.markdown("""
     .alloc-bar-fill { height: 6px; border-radius: 3px; }
     .alloc-pct { font-size: 13px; color: #E0E0E0; font-weight: 600; width: 40px; text-align: right; }
 
-    /* ── Pill 라디오 버튼 (4H/D/W/M, KRW/USD 통일) ── */
+    /* ── Pill 라디오 버튼 (D/W/M, KRW/USD 통일) ── */
     div[data-testid="stRadio"] { 
         width: fit-content !important; 
     }
@@ -300,7 +300,7 @@ with title_col:
 with period_col:
     st.markdown('<span class="marker align-right color-red"></span>', unsafe_allow_html=True)
     period = st.radio(
-        "", ["4H", "D", "W", "M"],
+        "", ["D", "W", "M"],
         horizontal=True, label_visibility="collapsed",
         index=1, key="period_radio"
     )
@@ -313,13 +313,7 @@ if not df.empty:
     now = pdf.index.max()
     today = pd.Timestamp.now()
 
-    if period == "4H":
-        pdf = pdf[pdf.index >= now - pd.Timedelta(days=7)]
-        pdf = pdf.resample('4h').last().dropna()
-        xaxis_cfg = dict(tickformat="%m-%d %H:%M", gridcolor='#2A2E39',
-                         range=[pdf.index.min(), pdf.index.max()],
-                         dtick=4*60*60*1000, tickangle=0)
-    elif period == "D":
+    if period == "D":
         pdf = pdf.groupby(pdf.index.date).last()
         pdf.index = pd.to_datetime(pdf.index)
         xaxis_cfg = dict(tickformat="%m-%d", gridcolor='#2A2E39',
