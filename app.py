@@ -214,7 +214,11 @@ with h2:
 st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
-    prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
+
+    # 어제 날짜의 마지막 데이터를 prev로
+    today = pd.Timestamp.now().normalize()
+    yesterday_data = df[df['시간'] < today]
+    prev = yesterday_data.iloc[-1] if not yesterday_data.empty else df.iloc[-1]
 
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
     kimp_ratio = curr['김프차익'] / total_val * 100
