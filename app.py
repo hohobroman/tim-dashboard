@@ -134,7 +134,6 @@ def load_data():
         df_m = pd.DataFrame(m_data[1:], columns=m_data[0])
         df_m['시간'] = pd.to_datetime(df_m['시간'])
         
-        # 빙엑스 현물DCA -> 빙엑스 선물로 수정
         for c in ['김프차익', 'OKX통합', '빙엑스 선물', '총자산']:
             df_m[c] = pd.to_numeric(df_m[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
@@ -157,7 +156,6 @@ def load_data():
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
 
-# ── session_state 초기화 ──
 if 'currency' not in st.session_state:
     st.session_state['currency'] = 'KRW'
 
@@ -174,10 +172,6 @@ def delta_html(val):
     sym = "▲" if val >= 0 else "▼"
     css = "metric-delta-pos" if val >= 0 else "metric-delta-neg"
     return f'<div style="padding-bottom:8px;"><span class="{css}">{sym} {fmt(abs(val))}</span></div>'
-def pct_html(pct):
-    sign = "+" if pct >= 0 else ""
-    css = "metric-pct-pos" if pct >= 0 else "metric-pct-neg"
-    return f'<div class="{css}">{sign}{pct:.2f}%</div>'
 
 # ══════════════════════════════════════════════════
 # ── 헤더
@@ -215,16 +209,12 @@ with h2:
         st.rerun()
 
 # ══════════════════════════════════════════════════
-# ── 요약 카드
+# ── 요약 카드 (% 제거)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
-    first = df.iloc[0]
-
-    def pct_change(col):
-        return 0.0 if first[col] == 0 else (curr[col] - first[col]) / first[col] * 100
 
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
     kimp_ratio = curr['김프차익'] / total_val * 100
@@ -236,25 +226,21 @@ if not df.empty:
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">TOTAL (총 자산)</div>
             <div class="metric-value">{fmt(curr['총자산'])}</div>
-            {pct_html(pct_change('총자산'))}
             {delta_html(curr['총자산']-prev['총자산'])}
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">김프차익 (업비트&바이비트)</div>
             <div class="metric-value">{fmt(curr['김프차익'])}</div>
-            {pct_html(pct_change('김프차익'))}
             {delta_html(curr['김프차익']-prev['김프차익'])}
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">OKX (시그널봇&현물)</div>
             <div class="metric-value">{fmt(curr['OKX통합'])}</div>
-            {pct_html(pct_change('OKX통합'))}
             {delta_html(curr['OKX통합']-prev['OKX통합'])}
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">빙엑스 선물</div>
             <div class="metric-value">{fmt(curr['빙엑스 선물'])}</div>
-            {pct_html(pct_change('빙엑스 선물'))}
             {delta_html(curr['빙엑스 선물']-prev['빙엑스 선물'])}
         </div>
         <div class="alloc-card" style='flex:1;'>
@@ -360,7 +346,7 @@ if not df.empty:
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1, font=dict(color="#E0E0E0"))
     )
-    st.plotly_chart(fig,  config={'displayModeBar': False})
+    st.plotly_chart(fig, config={'displayModeBar': False})
 
 # ══════════════════════════════════════════════════
 # ── 포지션 현황
@@ -368,7 +354,6 @@ if not df.empty:
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    # 💡 여기서 OKX(현물), OKX(선물)를 제외했습니다.
     show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)'])].copy()
     if not show.empty:
         if '방향' in show.columns:
@@ -412,7 +397,7 @@ if not df.empty:
     daily = daily.groupby(daily.index.date).last()
     daily.index = pd.to_datetime(daily.index)
 
-    daily['일손익_총']   = daily['총자산'].diff().fillna(0)
+    daily['일손익_총'] = daily['총자산'].diff().fillna(0)
     
     pnl_col, cum_col = '일손익_총', '총자산'
 
@@ -480,7 +465,7 @@ if not df.empty:
 
 st.markdown("<div style='margin-top:40px;'></div>", unsafe_allow_html=True)
 
-# ── 5분마다 자동 새로고침 (부모 창 새로고침으로 수정) ──
+# ── 5분마다 자동 새로고침 ──
 components.html(
     """
     <script>
