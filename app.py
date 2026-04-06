@@ -134,7 +134,7 @@ def load_data():
         df_m = pd.DataFrame(m_data[1:], columns=m_data[0])
         df_m['시간'] = pd.to_datetime(df_m['시간'])
         
-        for c in ['김프차익', 'OKX통합', '빙엑스 선물', '총자산']:
+        for c in ['김프차익&업비트 현물', 'OKX통합', '빙엑스 선물', '총자산']:
             df_m[c] = pd.to_numeric(df_m[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
         p_data = db.get_worksheet(1).get_all_values()
@@ -217,7 +217,7 @@ if not df.empty:
     prev  = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
 
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
-    kimp_ratio = curr['김프차익'] / total_val * 100
+    kimp_ratio = curr['김프차익&업비트 현물'] / total_val * 100
     okx_ratio  = curr['OKX통합']  / total_val * 100
     bx_ratio   = curr['빙엑스 선물'] / total_val * 100
 
@@ -229,9 +229,9 @@ if not df.empty:
             {delta_html(curr['총자산']-prev['총자산'])}
         </div>
         <div class="metric-card" style='flex:1;'>
-            <div class="metric-label">김프차익 (업비트&바이비트)</div>
-            <div class="metric-value">{fmt(curr['김프차익'])}</div>
-            {delta_html(curr['김프차익']-prev['김프차익'])}
+            <div class="metric-label">김프차익(업비트+바이비트)&업비트 현물 </div>
+            <div class="metric-value">{fmt(curr['김프차익&업비트 현물'])}</div>
+            {delta_html(curr['김프차익&업비트 현물']-prev['김프차익&업비트 현물'])}
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">OKX (시그널봇&현물)</div>
@@ -318,14 +318,14 @@ if not df.empty:
                          dtick='M1')
 
     if is_usd:
-        for c in ['총자산', '김프차익', 'OKX통합', '빙엑스 선물']:
+        for c in ['총자산', '김프차익&업비트 현물', 'OKX통합', '빙엑스 선물']:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=pdf.index, y=pdf['총자산'], mode='lines', name='TOTAL',
         line=dict(color='#A855F7', width=3), fill='tozeroy', fillcolor='rgba(168,85,247,0.1)',
         hovertemplate=f"<b style='color:#A855F7'>TOTAL</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익'], mode='lines', name='KIMP',
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['김프차익&업비트 현물'], mode='lines', name='KIMP',
         line=dict(color='#00E676', width=2),
         hovertemplate=f"<b style='color:#00E676'>KIMP</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
     fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
