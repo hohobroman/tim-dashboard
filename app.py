@@ -407,7 +407,7 @@ else:
     st.info("현재 포지션이 없습니다.")
 
 # ══════════════════════════════════════════════════
-# ── 손익 내역
+# ── 손익 내역 (순수 매매 보정 적용)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
@@ -417,45 +417,68 @@ if not df.empty:
     daily = daily.groupby(daily.index.date).last()
     daily.index = pd.to_datetime(daily.index)
 
-    daily['일손익_총'] = daily['총자산'].diff().fillna(0)
+    # 1. 단순 자산 증감분 계산 (결측치는 0)
+    daily['일손익_단순'] = daily['총자산'].diff().fillna(0)
     
-    pnl_col, cum_col = '일손익_총', '총자산'
+    # 2. 입출금액 일별 집계
+    daily['입금액'] = 0.0
+    daily['출금액'] = 0.0
 
-    pnl_vals   = daily[pnl_col]
+    transfer_rows = {}
+    if not transfer_df.empty:
+        transfer_df['날짜'] = pd.to_datetime(transfer_df['날짜']).dt.normalize()
+        
+        for _, tr in transfer_df.iterrows():
+            d = tr['날짜']
+            if d not in transfer_rows:
+                transfer_rows[d] = []
+            transfer_rows[d].append(tr)
+            
+            # 금액 집계 (해당 날짜에 여러 번 입출금할 수도 있으므로 누적합)
+            if tr['유형'] == '입금':
+                if d in daily.index: daily.at[d, '입금액'] += tr['금액']
+            elif tr['유형'] == '출금':
+                if d in daily.index: daily.at[d, '출금액'] += tr['금액']
+
+    # 3. ✨ 순수 매매 손익 보정 (단순 증감 - 입금 + 출금) ✨
+    daily['일손익_순수'] = daily['일손익_단순'] - daily['입금액'] + daily['출금액']
+    
+    # 첫 날의 경우 이전 자산 기록이 없으므로 증감분을 0으로 강제 보정
+    if len(daily) > 0:
+        daily.iloc[0, daily.columns.get_loc('일손익_순수')] = 0
+    
+    # 4. 누적 손익 계산 (보정된 순수 일 손익의 누적합)
+    daily['누적손익_보정'] = daily['일손익_순수'].cumsum()
+
+    pnl_vals   = daily['일손익_순수']
     wins       = (pnl_vals > 0).sum()
     total_days = (pnl_vals != 0).sum()
     win_rate   = wins / total_days * 100 if total_days > 0 else 0
-    total_pnl  = pnl_vals.sum()
+    total_pnl  = daily['누적손익_보정'].iloc[-1] if not daily.empty else 0
     max_profit = pnl_vals.max()
     max_loss   = pnl_vals.min()
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
     sc1, sc2, sc3, sc4 = st.columns(4)
     with sc1:
-        st.markdown(f"<div class='stat-card'><div class='stat-label'>총 손익</div><div class='stat-value' style='color:{'#00E676' if total_pnl>=0 else '#FF5370'}'>{fmt_signed(total_pnl)}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='stat-card'><div class='stat-label'>총 손익 (입출금 제외)</div><div class='stat-value' style='color:{'#00E676' if total_pnl>=0 else '#FF5370'}'>{fmt_signed(total_pnl)}</div></div>", unsafe_allow_html=True)
     with sc2:
         st.markdown(f"<div class='stat-card'><div class='stat-label'>승률</div><div class='stat-value'>{win_rate:.1f}%</div></div>", unsafe_allow_html=True)
     with sc3:
-        st.markdown(f"<div class='stat-card'><div class='stat-label'>최대 수익</div><div class='stat-value' style='color:#00E676'>{fmt_signed(max_profit)}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='stat-card'><div class='stat-label'>최대 일일수익</div><div class='stat-value' style='color:#00E676'>{fmt_signed(max_profit)}</div></div>", unsafe_allow_html=True)
     with sc4:
-        st.markdown(f"<div class='stat-card'><div class='stat-label'>최대 손실</div><div class='stat-value' style='color:#FF5370'>{fmt_signed(max_loss)}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='stat-card'><div class='stat-label'>최대 일일손실</div><div class='stat-value' style='color:#FF5370'>{fmt_signed(max_loss)}</div></div>", unsafe_allow_html=True)
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
 
-    transfer_rows = {}
-    if not transfer_df.empty:
-        for _, tr in transfer_df.iterrows():
-            d = pd.Timestamp(tr['날짜']).normalize()
-            if d not in transfer_rows:
-                transfer_rows[d] = []
-            transfer_rows[d].append(tr)
-
     rows_html = ""
     for date, row in daily.sort_index(ascending=False).iterrows():
-        d_val = row[pnl_col]
-        c_val = row[cum_col] - daily[cum_col].iloc[0]
+        d_val = row['일손익_순수']
+        c_val = row['누적손익_보정']
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
+        
+        # 입출금 내역 표시 행 추가 (매매 내역과는 독립적으로 시각적 표시만 함)
         if date in transfer_rows:
             for tr in transfer_rows[date]:
                 is_dep = tr['유형'] == '입금'
@@ -469,6 +492,8 @@ if not df.empty:
                     f"<span style='background:{bb};color:{bc};font-size:11px;padding:1px 6px;border-radius:3px;'>{bt}</span>{mb}</td>"
                     f"<td style='color:#2A2E39;'>—</td><td style='color:#2A2E39;'>—</td></tr>"
                 )
+                
+        # 순수 매매 손익 표시 (입출금이 제외된 진짜 내 실력)
         rows_html += (
             f"<tr><td>{date.strftime('%Y-%m-%d')}</td>"
             f"<td class='{d_cls}'>{fmt_signed(d_val)}</td>"
