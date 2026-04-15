@@ -232,9 +232,28 @@ st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
 
-    today = pd.Timestamp.now().normalize()
+    # 시트에 기록된 마지막 시간을 기준으로 '오늘' 날짜를 잡습니다 (타임존 오류 방지)
+    today = curr['시간'].normalize()
     yesterday_data = df[df['시간'] < today]
     prev = yesterday_data.iloc[-1] if not yesterday_data.empty else df.iloc[-1]
+
+    # 1. 단순 증감분
+    raw_total_delta = curr['총자산'] - prev['총자산']
+    raw_kimp_delta  = curr['김프차익'] - prev['김프차익']
+    raw_okx_delta   = curr['OKX통합']  - prev['OKX통합']
+    raw_bx_delta    = curr['빙엑스 선물'] - prev['빙엑스 선물']
+
+    # 2. 오늘 하루 동안 발생한 입출금액 합산
+    today_dep, today_wit = 0.0, 0.0
+    if not transfer_df.empty:
+        tf = transfer_df.copy()
+        tf['날짜'] = pd.to_datetime(tf['날짜']).dt.normalize()
+        today_tf = tf[tf['날짜'] == today]
+        today_dep = today_tf[today_tf['유형'] == '입금']['금액'].sum()
+        today_wit = today_tf[today_tf['유형'] == '출금']['금액'].sum()
+
+    # 3. ✨ 상단 TOTAL 증감분 보정 (단순 증감 - 오늘 입금 + 오늘 출금) ✨
+    pure_total_delta = raw_total_delta - today_dep + today_wit
 
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
     kimp_ratio = curr['김프차익'] / total_val * 100
@@ -246,22 +265,22 @@ if not df.empty:
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">TOTAL (총 자산)</div>
             <div class="metric-value">{fmt(curr['총자산'])}</div>
-            {delta_html(curr['총자산']-prev['총자산'])}
+            {delta_html(pure_total_delta)} 
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">김프차익 or 업비트현물</div>
             <div class="metric-value">{fmt(curr['김프차익'])}</div>
-            {delta_html(curr['김프차익']-prev['김프차익'])}
+            {delta_html(raw_kimp_delta)}
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">OKX (시그널봇&현물)</div>
             <div class="metric-value">{fmt(curr['OKX통합'])}</div>
-            {delta_html(curr['OKX통합']-prev['OKX통합'])}
+            {delta_html(raw_okx_delta)}
         </div>
         <div class="metric-card" style='flex:1;'>
             <div class="metric-label">빙엑스 선물</div>
             <div class="metric-value">{fmt(curr['빙엑스 선물'])}</div>
-            {delta_html(curr['빙엑스 선물']-prev['빙엑스 선물'])}
+            {delta_html(raw_bx_delta)}
         </div>
         <div class="alloc-card" style='flex:1;'>
             <div class="alloc-label">자산 비중</div>
