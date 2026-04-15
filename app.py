@@ -120,6 +120,29 @@ def get_exchange_rate():
     try: return requests.get("https://api.upbit.com/v1/ticker?markets=KRW-USDT").json()[0]['trade_price']
     except: return 1350.0
 
+# ✅ [수정] 통화 자동 인식 파서 - 테더/USDT → KRW 변환, 원/KRW → 그대로
+def parse_amount(val, rate):
+    """
+    입력 예시:
+      - "32테더", "32 USDT", "32usdt"  → 32 * rate (KRW)
+      - "10000원", "10000 KRW", "10000" → 10000 (KRW)
+    """
+    try:
+        val = str(val).strip().replace(',', '')
+        val_lower = val.lower()
+        # 숫자 추출 (정수/소수 모두 지원)
+        num_str = ''.join(c for c in val if c.isdigit() or c == '.')
+        if not num_str:
+            return 0.0
+        num = float(num_str)
+        # 테더 / USDT 키워드 감지 → KRW로 환산
+        if '테더' in val_lower or 'usdt' in val_lower or 'usd' in val_lower:
+            return num * rate
+        # 원 / KRW 또는 단순 숫자 → 그대로 KRW
+        return num
+    except:
+        return 0.0
+
 @st.cache_data(ttl=5)
 def load_data():
     try:
@@ -144,17 +167,28 @@ def load_data():
         if len(t_data) > 1:
             df_t = pd.DataFrame(t_data[1:], columns=t_data[0])
             df_t['날짜'] = pd.to_datetime(df_t['날짜'])
-            df_t['금액'] = pd.to_numeric(df_t['금액'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            # ✅ [수정] 금액 파싱은 rate가 필요해서 raw string으로 반환, 이후 변환
+            # 일단 raw 문자열 유지 (아래에서 rate 적용)
+            df_t['금액_raw'] = df_t['금액'].astype(str)
+            df_t['금액'] = pd.to_numeric(
+                df_t['금액'].astype(str).str.replace(',', '').str.replace('원','').str.replace('테더','')
+                    .str.replace('usdt','', case=False).str.replace('usd','', case=False).str.strip(),
+                errors='coerce'
+            ).fillna(0)
         else:
-            df_t = pd.DataFrame(columns=['날짜', '유형', '금액', '메모'])
+            df_t = pd.DataFrame(columns=['날짜', '유형', '금액', '금액_raw', '메모'])
 
         return df_m, df_p, df_t
     except Exception as e:
         print(f"Data Load Error: {e}")
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(columns=['날짜', '유형', '금액', '메모'])
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(columns=['날짜', '유형', '금액', '금액_raw', '메모'])
 
 usdt_rate = get_exchange_rate()
 df, pos_df, transfer_df = load_data()
+
+# ✅ [수정] load_data() 밖에서 rate 적용하여 금액 KRW 변환
+if not transfer_df.empty and '금액_raw' in transfer_df.columns:
+    transfer_df['금액'] = transfer_df['금액_raw'].apply(lambda x: parse_amount(x, usdt_rate))
 
 if 'currency' not in st.session_state:
     st.session_state['currency'] = 'KRW'
@@ -215,7 +249,6 @@ st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
 
-    # 어제 날짜의 마지막 데이터를 prev로
     today = pd.Timestamp.now().normalize()
     yesterday_data = df[df['시간'] < today]
     prev = yesterday_data.iloc[-1] if not yesterday_data.empty else df.iloc[-1]
@@ -426,9 +459,11 @@ if not df.empty:
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
 
+    # ✅ [수정] transfer_rows key를 pd.Timestamp.normalize()로 통일
     transfer_rows = {}
     if not transfer_df.empty:
         for _, tr in transfer_df.iterrows():
+            # normalize()로 시분초 제거 → Timestamp(date 00:00:00) 형태로 통일
             d = pd.Timestamp(tr['날짜']).normalize()
             if d not in transfer_rows:
                 transfer_rows[d] = []
@@ -436,20 +471,26 @@ if not df.empty:
 
     rows_html = ""
     for date, row in daily.sort_index(ascending=False).iterrows():
+        # ✅ [수정] daily index도 normalize()로 통일해서 비교
+        date_key = pd.Timestamp(date).normalize()
+
         d_val = row[pnl_col]
         c_val = row[cum_col] - daily[cum_col].iloc[0]
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
-        if date in transfer_rows:
-            for tr in transfer_rows[date]:
+
+        # ✅ [수정] date → date_key 로 조회
+        if date_key in transfer_rows:
+            for tr in transfer_rows[date_key]:
                 is_dep = tr['유형'] == '입금'
                 bc = "#3B82F6" if is_dep else "#FFAA00"
                 bb = "rgba(59,130,246,0.15)" if is_dep else "rgba(255,170,0,0.15)"
+                # ✅ [수정] 금액 표시 시 fmt() 사용 (KRW/USD 토글 반영)
                 bt = f"입금 {fmt(tr['금액'])}" if is_dep else f"출금 {fmt(tr['금액'])}"
                 memo = tr.get('메모', '')
                 mb = f"<span style='color:#8B949E;font-size:11px;margin-left:4px;'>{memo}</span>" if memo else ""
                 rows_html += (
-                    f"<tr class='transfer-row'><td>{date.strftime('%Y-%m-%d')} "
+                    f"<tr class='transfer-row'><td>{date_key.strftime('%Y-%m-%d')} "
                     f"<span style='background:{bb};color:{bc};font-size:11px;padding:1px 6px;border-radius:3px;'>{bt}</span>{mb}</td>"
                     f"<td style='color:#2A2E39;'>—</td><td style='color:#2A2E39;'>—</td></tr>"
                 )
