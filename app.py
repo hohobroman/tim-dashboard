@@ -145,20 +145,31 @@ def load_data(current_usdt_rate):
         if len(t_data) > 1:
             df_t = pd.DataFrame(t_data[1:], columns=t_data[0])
             
-            # 날짜 파싱 오류 방지
-            df_t['날짜'] = pd.to_datetime(df_t['날짜'], yearfirst=True, errors='coerce')
+            # 날짜 파싱: "26.04.15" 형식 포함 다양한 포맷 처리
+            def parse_date(val):
+                val_str = str(val).strip()
+                # "YY.MM.DD" 형식 처리 (예: 26.04.15 → 2026-04-15)
+                m = re.match(r'^(\d{2})\.(\d{2})\.(\d{2})$', val_str)
+                if m:
+                    yy, mm, dd = m.groups()
+                    return pd.Timestamp(f"20{yy}-{mm}-{dd}")
+                # 그 외 표준 파싱 시도
+                try:
+                    return pd.to_datetime(val_str)
+                except:
+                    return pd.NaT
+
+            df_t['날짜'] = df_t['날짜'].apply(parse_date)
             df_t = df_t.dropna(subset=['날짜'])
-            
-            # 숫자와 문자가 혼합된 데이터를 분리하고 환율 적용
+            # 날짜를 자정(00:00:00)으로 정규화
+            df_t['날짜'] = df_t['날짜'].dt.normalize()
+
             def parse_amount(val):
                 val_str = str(val).replace(',', '').strip()
                 num_str = re.sub(r'[^0-9.]', '', val_str)
                 num = float(num_str) if num_str else 0.0
-                
-                # '테더', 'USDT', '$' 등이 포함되어 있으면 현재 환율 곱하기
                 if any(kw in val_str.upper() for kw in ['USDT', '테더', '$', '달러']):
                     return num * current_usdt_rate
-                
                 return num
 
             df_t['금액'] = df_t['금액'].apply(parse_amount)
@@ -226,33 +237,46 @@ with h2:
         st.rerun()
 
 # ══════════════════════════════════════════════════
+# ── 입출금 일별 집계 (전체에서 공통으로 사용)
+# ══════════════════════════════════════════════════
+dep_by_date = pd.Series(dtype=float)
+wit_by_date = pd.Series(dtype=float)
+transfer_rows = {}  # {Timestamp(날짜): [행들]}
+
+if not transfer_df.empty:
+    tf = transfer_df.copy()
+    # 날짜 타입을 Timestamp(normalize)로 통일
+    tf['날짜'] = pd.to_datetime(tf['날짜']).dt.normalize()
+
+    dep_by_date = tf[tf['유형'] == '입금'].groupby('날짜')['금액'].sum()
+    wit_by_date = tf[tf['유형'] == '출금'].groupby('날짜')['금액'].sum()
+
+    for _, tr in tf.iterrows():
+        d = tr['날짜']
+        if d not in transfer_rows:
+            transfer_rows[d] = []
+        transfer_rows[d].append(tr)
+
+# ══════════════════════════════════════════════════
 # ── 요약 카드
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
 if not df.empty:
     curr  = df.iloc[-1]
 
-    # 시트에 기록된 마지막 시간을 기준으로 '오늘' 날짜를 잡습니다 (타임존 오류 방지)
     today = curr['시간'].normalize()
     yesterday_data = df[df['시간'] < today]
     prev = yesterday_data.iloc[-1] if not yesterday_data.empty else df.iloc[-1]
 
-    # 1. 단순 증감분
     raw_total_delta = curr['총자산'] - prev['총자산']
     raw_kimp_delta  = curr['김프차익'] - prev['김프차익']
     raw_okx_delta   = curr['OKX통합']  - prev['OKX통합']
     raw_bx_delta    = curr['빙엑스 선물'] - prev['빙엑스 선물']
 
-    # 2. 오늘 하루 동안 발생한 입출금액 합산
-    today_dep, today_wit = 0.0, 0.0
-    if not transfer_df.empty:
-        tf = transfer_df.copy()
-        tf['날짜'] = pd.to_datetime(tf['날짜']).dt.normalize()
-        today_tf = tf[tf['날짜'] == today]
-        today_dep = today_tf[today_tf['유형'] == '입금']['금액'].sum()
-        today_wit = today_tf[today_tf['유형'] == '출금']['금액'].sum()
+    # 오늘 입출금 (공통 집계 사용)
+    today_dep = dep_by_date.get(today, 0.0)
+    today_wit = wit_by_date.get(today, 0.0)
 
-    # 3. ✨ 상단 TOTAL 증감분 보정 (단순 증감 - 오늘 입금 + 오늘 출금) ✨
     pure_total_delta = raw_total_delta - today_dep + today_wit
 
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
@@ -426,7 +450,7 @@ else:
     st.info("현재 포지션이 없습니다.")
 
 # ══════════════════════════════════════════════════
-# ── 손익 내역 (순수 매매 보정 적용)
+# ── 손익 내역
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
@@ -434,39 +458,24 @@ st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 
 if not df.empty:
     daily = df.copy().set_index('시간').sort_index()
     daily = daily.groupby(daily.index.date).last()
+    # ★ 핵심: daily.index를 Timestamp로 통일 (transfer_df와 타입 맞춤)
     daily.index = pd.to_datetime(daily.index)
 
-    # 1. 단순 자산 증감분 계산 (결측치는 0)
+    # 1. 단순 자산 증감분
     daily['일손익_단순'] = daily['총자산'].diff().fillna(0)
-    
-    # 2. 입출금액 일별 집계
-    daily['입금액'] = 0.0
-    daily['출금액'] = 0.0
 
-    transfer_rows = {}
-    if not transfer_df.empty:
-        transfer_df['날짜'] = pd.to_datetime(transfer_df['날짜']).dt.normalize()
-        
-        for _, tr in transfer_df.iterrows():
-            d = tr['날짜']
-            if d not in transfer_rows:
-                transfer_rows[d] = []
-            transfer_rows[d].append(tr)
-            
-            # 금액 집계 (해당 날짜에 여러 번 입출금할 수도 있으므로 누적합)
-            if tr['유형'] == '입금':
-                if d in daily.index: daily.at[d, '입금액'] += tr['금액']
-            elif tr['유형'] == '출금':
-                if d in daily.index: daily.at[d, '출금액'] += tr['금액']
+    # 2. ★ 수정된 입출금 집계 방식: map으로 타입 불일치 없이 매핑
+    daily['입금액'] = daily.index.map(lambda d: dep_by_date.get(d, 0.0))
+    daily['출금액'] = daily.index.map(lambda d: wit_by_date.get(d, 0.0))
 
-    # 3. ✨ 순수 매매 손익 보정 (단순 증감 - 입금 + 출금) ✨
+    # 3. 순수 매매 손익 보정 (단순 증감 - 입금 + 출금)
     daily['일손익_순수'] = daily['일손익_단순'] - daily['입금액'] + daily['출금액']
-    
-    # 첫 날의 경우 이전 자산 기록이 없으므로 증감분을 0으로 강제 보정
+
+    # 첫 날 보정 (이전 데이터 없으므로 0 처리)
     if len(daily) > 0:
         daily.iloc[0, daily.columns.get_loc('일손익_순수')] = 0
-    
-    # 4. 누적 손익 계산 (보정된 순수 일 손익의 누적합)
+
+    # 4. 누적 손익
     daily['누적손익_보정'] = daily['일손익_순수'].cumsum()
 
     pnl_vals   = daily['일손익_순수']
@@ -496,8 +505,8 @@ if not df.empty:
         c_val = row['누적손익_보정']
         d_cls = "pos" if d_val >= 0 else "neg"
         c_cls = "pos" if c_val >= 0 else "neg"
-        
-        # 입출금 내역 표시 행 추가 (매매 내역과는 독립적으로 시각적 표시만 함)
+
+        # 입출금 뱃지 행 (해당 날짜에 입출금이 있으면 위에 표시)
         if date in transfer_rows:
             for tr in transfer_rows[date]:
                 is_dep = tr['유형'] == '입금'
@@ -511,8 +520,8 @@ if not df.empty:
                     f"<span style='background:{bb};color:{bc};font-size:11px;padding:1px 6px;border-radius:3px;'>{bt}</span>{mb}</td>"
                     f"<td style='color:#2A2E39;'>—</td><td style='color:#2A2E39;'>—</td></tr>"
                 )
-                
-        # 순수 매매 손익 표시 (입출금이 제외된 진짜 내 실력)
+
+        # 순수 매매 손익 행
         rows_html += (
             f"<tr><td>{date.strftime('%Y-%m-%d')}</td>"
             f"<td class='{d_cls}'>{fmt_signed(d_val)}</td>"
