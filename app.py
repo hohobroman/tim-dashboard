@@ -450,7 +450,7 @@ else:
     st.info("현재 포지션이 없습니다.")
 
 # ══════════════════════════════════════════════════
-# ── 손익 내역
+# ── 손익 내역 (구간 합산 로직 적용)
 # ══════════════════════════════════════════════════
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 손익 내역</h4>", unsafe_allow_html=True)
@@ -458,15 +458,31 @@ st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>📋 
 if not df.empty:
     daily = df.copy().set_index('시간').sort_index()
     daily = daily.groupby(daily.index.date).last()
-    # ★ 핵심: daily.index를 Timestamp로 통일 (transfer_df와 타입 맞춤)
     daily.index = pd.to_datetime(daily.index)
 
     # 1. 단순 자산 증감분
     daily['일손익_단순'] = daily['총자산'].diff().fillna(0)
 
-    # 2. ★ 수정된 입출금 집계 방식: map으로 타입 불일치 없이 매핑
-    daily['입금액'] = daily.index.map(lambda d: dep_by_date.get(d, 0.0))
-    daily['출금액'] = daily.index.map(lambda d: wit_by_date.get(d, 0.0))
+    # 2. 입출금 구간 합산: 이전 기록일 초과 ~ 현재 기록일 이하의 모든 입출금 합산
+    daily['입금액'] = 0.0
+    daily['출금액'] = 0.0
+
+    prev_date = None
+    for current_date in daily.index:
+        if prev_date is None:
+            # 첫 날은 이전 기간이 없으므로 당일 입출금만 반영
+            dep_sum = dep_by_date.get(current_date, 0.0)
+            wit_sum = wit_by_date.get(current_date, 0.0)
+        else:
+            # 이전 기록일 초과 ~ 현재 기록일 이하 기간의 모든 입출금 합산
+            mask_dep = (dep_by_date.index > prev_date) & (dep_by_date.index <= current_date)
+            mask_wit = (wit_by_date.index > prev_date) & (wit_by_date.index <= current_date)
+            dep_sum = dep_by_date[mask_dep].sum()
+            wit_sum = wit_by_date[mask_wit].sum()
+
+        daily.at[current_date, '입금액'] = dep_sum
+        daily.at[current_date, '출금액'] = wit_sum
+        prev_date = current_date
 
     # 3. 순수 매매 손익 보정 (단순 증감 - 입금 + 출금)
     daily['일손익_순수'] = daily['일손익_단순'] - daily['입금액'] + daily['출금액']
