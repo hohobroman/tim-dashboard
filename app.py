@@ -135,7 +135,8 @@ def load_data(current_usdt_rate):
         df_m = pd.DataFrame(m_data[1:], columns=m_data[0])
         df_m['시간'] = pd.to_datetime(df_m['시간'])
         
-        for c in ['김프차익', 'OKX통합', '빙엑스 선물', '총자산']:
+        # 빙엑스 선물 -> 비트겟 선물 로 변경
+        for c in ['김프차익', 'OKX통합', '비트겟 선물', '총자산']:
             df_m[c] = pd.to_numeric(df_m[c].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
 
         p_data = db.get_worksheet(1).get_all_values()
@@ -271,7 +272,7 @@ if not df.empty:
     raw_total_delta = curr['총자산'] - prev['총자산']
     raw_kimp_delta  = curr['김프차익'] - prev['김프차익']
     raw_okx_delta   = curr['OKX통합']  - prev['OKX통합']
-    raw_bx_delta    = curr['빙엑스 선물'] - prev['빙엑스 선물']
+    raw_bg_delta    = curr['비트겟 선물'] - prev['비트겟 선물'] # 비트겟으로 변경
 
     # 오늘 입출금 (공통 집계 사용)
     today_dep = dep_by_date.get(today, 0.0)
@@ -282,7 +283,7 @@ if not df.empty:
     total_val  = curr['총자산'] if curr['총자산'] != 0 else 1
     kimp_ratio = curr['김프차익'] / total_val * 100
     okx_ratio  = curr['OKX통합']  / total_val * 100
-    bx_ratio   = curr['빙엑스 선물'] / total_val * 100
+    bg_ratio   = curr['비트겟 선물'] / total_val * 100 # 비트겟으로 변경
 
     st.markdown(f"""
     <div class='cards-container'>
@@ -302,9 +303,9 @@ if not df.empty:
             {delta_html(raw_okx_delta)}
         </div>
         <div class="metric-card" style='flex:1;'>
-            <div class="metric-label">빙엑스 선물</div>
-            <div class="metric-value">{fmt(curr['빙엑스 선물'])}</div>
-            {delta_html(raw_bx_delta)}
+            <div class="metric-label">비트겟 선물</div>
+            <div class="metric-value">{fmt(curr['비트겟 선물'])}</div>
+            {delta_html(raw_bg_delta)}
         </div>
         <div class="alloc-card" style='flex:1;'>
             <div class="alloc-label">자산 비중</div>
@@ -323,9 +324,9 @@ if not df.empty:
             </div>
             <div class="alloc-row">
                 <div class="alloc-dot" style="background:#F59E0B;"></div>
-                <div class="alloc-name">BingX</div>
-                <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:{bx_ratio:.1f}%;background:#F59E0B;"></div></div>
-                <div class="alloc-pct">{bx_ratio:.1f}%</div>
+                <div class="alloc-name">Bitget</div>
+                <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:{bg_ratio:.1f}%;background:#F59E0B;"></div></div>
+                <div class="alloc-pct">{bg_ratio:.1f}%</div>
             </div>
             <div style='height:10px;'></div>
         </div>
@@ -381,7 +382,8 @@ if not df.empty:
                          dtick='M1')
 
     if is_usd:
-        for c in ['총자산', '김프차익', 'OKX통합', '빙엑스 선물']:
+        # 빙엑스 선물 -> 비트겟 선물 로 변경
+        for c in ['총자산', '김프차익', 'OKX통합', '비트겟 선물']:
             pdf[c] = pdf[c] / usdt_rate
 
     fig = go.Figure()
@@ -394,9 +396,9 @@ if not df.empty:
     fig.add_trace(go.Scatter(x=pdf.index, y=pdf['OKX통합'], mode='lines', name='OKX',
         line=dict(color='#3B82F6', width=2),
         hovertemplate=f"<b style='color:#3B82F6'>OKX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
-    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['빙엑스 선물'], mode='lines', name='BingX',
+    fig.add_trace(go.Scatter(x=pdf.index, y=pdf['비트겟 선물'], mode='lines', name='Bitget',
         line=dict(color='#F59E0B', width=2),
-        hovertemplate=f"<b style='color:#F59E0B'>BingX</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
+        hovertemplate=f"<b style='color:#F59E0B'>Bitget</b>: {currency_sym}%{{y:{fmt_hover}}}<extra></extra>"))
 
     fig.update_layout(
         plot_bgcolor='#171B26', paper_bgcolor='#171B26', font=dict(color='#8B949E'),
@@ -417,7 +419,8 @@ if not df.empty:
 st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
 st.markdown("<h4 style='color:#E0E0E0;font-weight:600;margin-bottom:12px;'>🎯 포지션 현황</h4>", unsafe_allow_html=True)
 if not pos_df.empty:
-    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'BingX(선물)'])].copy()
+    # 빙엑스 대신 Bitget(선물) 표시
+    show = pos_df[pos_df['거래소'].isin(['Upbit', 'Bybit', 'Bitget(선물)'])].copy()
     if not show.empty:
         if '방향' in show.columns:
             show['방향'] = show['방향'].replace({'SPOT': 'LONG'})
